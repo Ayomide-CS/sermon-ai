@@ -4,7 +4,6 @@ export default function Home() {
     <main>
       <h1>Sermon AI</h1>
       <p>Turn sermons into personal Bible study notes</p>
-
       <SermonForm/>
     </main>
   );
