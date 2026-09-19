@@ -1,6 +1,5 @@
 import {getYouTubeVideoId, getYouTubeVideoMetadata,} from "@/app/lib/youtube";
 import { getYouTubeTranscript } from "@/app/lib/transcript";
-import { error } from "console";
 
 export async function POST(request: Request) {
   // Step 1: Parse request body
@@ -59,22 +58,56 @@ export async function POST(request: Request) {
       );
     }
 
-    const transcript = await getYouTubeTranscript(videoId);
+    //Step 5b: Fetch YouTube transcript
+    const transcriptResult = await getYouTubeTranscript(videoId);
 
-    if(!transcript){
-      return Response.json(
-        {
-          error: "Transcript unavaliable for this sermon.",
-        },
-        {status: 422}
-      );
-    }
+    console.log("Transcript result:", transcriptResult);
+
+      if (transcriptResult.status === "DISABLED") {
+        return Response.json(
+          {
+            error: "Transcript is disabled for this sermon.",
+            code: "TRANSCRIPT_DISABLED",
+          },
+          { status: 422 }
+        );
+      }
+
+      if (transcriptResult.status === "NOT_AVAILABLE") {
+        return Response.json(
+          {
+            error: "No transcript is available for this sermon.",
+            code: "TRANSCRIPT_NOT_AVAILABLE",
+          },
+          { status: 422 }
+        );
+      }
+
+      if (transcriptResult.status === "VIDEO_UNAVAILABLE") {
+        return Response.json(
+          {
+            error: "This YouTube video is unavailable.",
+            code: "VIDEO_UNAVAILABLE",
+          },
+          { status: 404 }
+        );
+      }
+
+      if (transcriptResult.status === "ERROR") {
+        return Response.json(
+          {
+            error: "Something went wrong while retrieving the transcript.",
+            code: "TRANSCRIPT_ERROR",
+          },
+          { status: 502 }
+        );
+      }
 
     // Step 6: Return successful result
     return Response.json({
       message: "Sermon video found.",
       metadata,
-      transcript,
+      transcript: transcriptResult.data,
     });
   } catch (error) {
     console.error("YouTube metadata error:", error);
