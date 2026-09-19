@@ -1,6 +1,7 @@
 //client component for the frontend
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
 export default function SermonForm() {
@@ -8,6 +9,16 @@ export default function SermonForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  
+  const [metadata, setMetadata] = useState<{
+  videoId: string;
+  title: string;
+  description: string;
+  speaker: string;
+  thumbnail?: string;
+  publishedAt: string;
+  duration: string;
+} | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -38,7 +49,10 @@ export default function SermonForm() {
         throw new Error(result.error || "Something went wrong.");
       }
 
-      setMessage(`${result.message || "Sermon URL received"} — Video ID: ${result.videoId}`);
+     setMetadata(result.metadata);
+     setMessage("Sermon video found.");
+     setUrl("");
+
       setUrl("");
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Something went wrong.");
@@ -54,6 +68,32 @@ export default function SermonForm() {
       <button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Submitting..." : "Submit"}
       </button>
+
+
+      {metadata ? (
+      <div>
+      <h2>{metadata.title}</h2>
+
+      <p>Speaker: {metadata.speaker}</p>
+
+      <p>Video ID: {metadata.videoId}</p>
+
+      <p>Duration: {metadata.duration}</p>
+
+      <p>Published: {metadata.publishedAt}</p>
+
+      <p>{metadata.description}</p>
+
+      {metadata.thumbnail ? (
+      <Image
+        src={metadata.thumbnail}
+        alt={metadata.title}
+        width={480}
+        height={360}
+      />
+    ) : null}
+  </div>
+) : null}
 
       {error ? <p role="alert">{error}</p> : null}
       {message ? <p>{message}</p> : null}

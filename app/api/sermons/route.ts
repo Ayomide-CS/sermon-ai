@@ -1,7 +1,6 @@
-import {
-  getYouTubeVideoId,
-  getYouTubeVideoMetadata,
-} from "@/app/lib/youtube";
+import {getYouTubeVideoId, getYouTubeVideoMetadata,} from "@/app/lib/youtube";
+import { getYouTubeTranscript } from "@/app/lib/transcript";
+import { error } from "console";
 
 export async function POST(request: Request) {
   // Step 1: Parse request body
@@ -60,10 +59,22 @@ export async function POST(request: Request) {
       );
     }
 
+    const transcript = await getYouTubeTranscript(videoId);
+
+    if(!transcript){
+      return Response.json(
+        {
+          error: "Transcript unavaliable for this sermon.",
+        },
+        {status: 422}
+      );
+    }
+
     // Step 6: Return successful result
     return Response.json({
       message: "Sermon video found.",
       metadata,
+      transcript,
     });
   } catch (error) {
     console.error("YouTube metadata error:", error);
