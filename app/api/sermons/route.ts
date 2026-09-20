@@ -1,5 +1,6 @@
 import {getYouTubeVideoId, getYouTubeVideoMetadata,} from "@/app/lib/youtube";
 import { getYouTubeTranscript } from "@/app/lib/transcript";
+import { generateSermonNote } from "@/app/lib/ai";
 
 export async function POST(request: Request) {
   // Step 1: Parse request body
@@ -61,53 +62,60 @@ export async function POST(request: Request) {
     //Step 5b: Fetch YouTube transcript
     const transcriptResult = await getYouTubeTranscript(videoId);
 
-    console.log("Transcript result:", transcriptResult);
+    if (transcriptResult.status === "DISABLED") {
+      return Response.json(
+        {
+          error: "Transcript is disabled for this sermon.",
+          code: "TRANSCRIPT_DISABLED",
+        },
+        { status: 422 }
+      );
+    }
 
-      if (transcriptResult.status === "DISABLED") {
-        return Response.json(
-          {
-            error: "Transcript is disabled for this sermon.",
-            code: "TRANSCRIPT_DISABLED",
-          },
-          { status: 422 }
-        );
+    if (transcriptResult.status === "NOT_AVAILABLE") {
+      return Response.json(
+        {
+          error: "No transcript is available for this sermon.",
+          code: "TRANSCRIPT_NOT_AVAILABLE",
+        },
+        { status: 422 }
+      );
+    }
+
+    if (transcriptResult.status === "VIDEO_UNAVAILABLE") {
+      return Response.json(
+        {
+          error: "This YouTube video is unavailable.",
+          code: "VIDEO_UNAVAILABLE",
+        },
+        { status: 404 }
+      );
+    }
+
+    if (transcriptResult.status === "ERROR") {
+      return Response.json(
+        {
+          error: "Something went wrong while retrieving the transcript.",
+          code: "TRANSCRIPT_ERROR",
+        },
+        { status: 502 }
+      );
+    }
+
+    const sermonNote = await generateSermonNote(
+      transcriptResult.data.text,
+      {
+        title: metadata.title,
+        description: metadata.description,
+        speaker: metadata.speaker,
+        publishedAt: metadata.publishedAt,
       }
+    );
 
-      if (transcriptResult.status === "NOT_AVAILABLE") {
-        return Response.json(
-          {
-            error: "No transcript is available for this sermon.",
-            code: "TRANSCRIPT_NOT_AVAILABLE",
-          },
-          { status: 422 }
-        );
-      }
-
-      if (transcriptResult.status === "VIDEO_UNAVAILABLE") {
-        return Response.json(
-          {
-            error: "This YouTube video is unavailable.",
-            code: "VIDEO_UNAVAILABLE",
-          },
-          { status: 404 }
-        );
-      }
-
-      if (transcriptResult.status === "ERROR") {
-        return Response.json(
-          {
-            error: "Something went wrong while retrieving the transcript.",
-            code: "TRANSCRIPT_ERROR",
-          },
-          { status: 502 }
-        );
-      }
-
-    // Step 6: Return successful result
     return Response.json({
-      message: "Sermon video found.",
+      message: "Sermon analyzed successfully.",
       metadata,
-      transcript: transcriptResult.data,
+      sermonNote,
     });
   } catch (error) {
     console.error("YouTube metadata error:", error);
