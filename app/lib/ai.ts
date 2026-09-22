@@ -1,18 +1,9 @@
 import OpenAI from "openai";
+import type { SermonNote } from "@/app/types/sermon";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-export type SermonNote = {
-  overview: string;
-  mainPoints: string[];
-  keyLessons: string[];
-  keyQuotes: string[];
-  practicalApplications: string[];
-  prayerPoints: string[];
-  reflectionQuestions: string[];
-};
 
 type SermonMetadata = {
   title: string;
@@ -87,36 +78,42 @@ ${transcript}
             overview: {
               type: "string",
             },
+
             mainPoints: {
               type: "array",
               items: {
                 type: "string",
               },
             },
+
             keyLessons: {
               type: "array",
               items: {
                 type: "string",
               },
             },
+
             keyQuotes: {
               type: "array",
               items: {
                 type: "string",
               },
             },
+
             practicalApplications: {
               type: "array",
               items: {
                 type: "string",
               },
             },
+
             prayerPoints: {
               type: "array",
               items: {
                 type: "string",
               },
             },
+
             reflectionQuestions: {
               type: "array",
               items: {
@@ -124,6 +121,7 @@ ${transcript}
               },
             },
           },
+
           required: [
             "overview",
             "mainPoints",
@@ -133,6 +131,7 @@ ${transcript}
             "prayerPoints",
             "reflectionQuestions",
           ],
+
           additionalProperties: false,
         },
       },
