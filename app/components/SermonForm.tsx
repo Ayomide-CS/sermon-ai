@@ -80,56 +80,39 @@ export default function SermonForm() {
 
   return (
     <>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={url}
-          onChange={(event) =>
-            setUrl(event.target.value)
-          }
-          placeholder="Paste YouTube URL"
-          aria-label="YouTube URL"
-        />
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-        >
-          {isSubmitting
-            ? "Submitting..."
-            : "Submit"}
-        </button>
+      <form className="sermon-form" onSubmit={handleSubmit}>
+        <div className="sermon-form-row">
+          <input
+            type="url"
+            value={url}
+            onChange={(event) => setUrl(event.target.value)}
+            placeholder="Paste a YouTube sermon URL"
+            aria-label="YouTube URL"
+            required
+          />
+          <button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Analyzing..." : "Create notes"}
+          </button>
+        </div>
       </form>
 
       {error ? (
-        <p role="alert">{error}</p>
+        <p className="error-message" role="alert">{error}</p>
       ) : null}
 
-      {message ? <p>{message}</p> : null}
+      {message ? <p className="status-message">{message}</p> : null}
 
       {metadata ? (
-        <section>
-          <h2>{metadata.title}</h2>
-
-          <p>
-            Speaker: {metadata.speaker}
-          </p>
-
-          <p>
-            Video ID: {metadata.videoId}
-          </p>
-
-          <p>
-            Duration: {metadata.duration}
-          </p>
-
-          <p>
-            Published: {metadata.publishedAt}
-          </p>
-
-          <p>
-            {metadata.description}
-          </p>
+        <section className="metadata-card">
+          <div>
+            <p className="eyebrow">Sermon analyzed</p>
+            <h2>{metadata.title}</h2>
+            <div className="metadata-details">
+              <span>Speaker: {metadata.speaker}</span>
+              <span>{metadata.duration} · Published {metadata.publishedAt}</span>
+            </div>
+            <p className="metadata-description">{metadata.description}</p>
+          </div>
 
           {metadata.thumbnail ? (
             <Image
