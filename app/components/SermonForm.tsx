@@ -2,23 +2,25 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import SermonNoteView from "./SermonNote/SermonNoteView"
-import type { SermonMetadata, SermonNote,} from "@/app/types/sermon";
+import SermonNoteView from "./SermonNote/SermonNoteView";
+import type {SermonMetadata, SermonNote,} from "@/app/types/sermon";
 
 export default function SermonForm() {
   const [url, setUrl] = useState("");
-
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [error, setError] = useState("");
-
   const [message, setMessage] = useState("");
 
-  const [sermonNote, setSermonNote] = useState<SermonNote | null>(null);
+  const [sermonNote, setSermonNote] =
+    useState<SermonNote | null>(null);
 
-  const [metadata, setMetadata] = useState<SermonMetadata | null>(null);
+  const [metadata, setMetadata] =
+    useState<SermonMetadata | null>(null);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
 
     const trimmedUrl = url.trim();
@@ -57,7 +59,6 @@ export default function SermonForm() {
       }
 
       setSermonNote(result.sermonNote);
-
       setMetadata(result.metadata);
 
       setMessage(
@@ -79,38 +80,71 @@ export default function SermonForm() {
 
   return (
     <>
-      <form className="sermon-form" onSubmit={handleSubmit}>
+      {/* Sermon URL form */}
+      <form
+        className="sermon-form"
+        onSubmit={handleSubmit}
+      >
         <div className="sermon-form-row">
           <input
             type="url"
             value={url}
-            onChange={(event) => setUrl(event.target.value)}
+            onChange={(event) =>
+              setUrl(event.target.value)
+            }
             placeholder="Paste a YouTube sermon URL"
             aria-label="YouTube URL"
             required
           />
-          <button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Analyzing..." : "Create notes"}
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+          >
+            {isSubmitting
+              ? "Analyzing..."
+              : "Create notes"}
           </button>
         </div>
       </form>
 
+      {/* Error message */}
       {error ? (
-        <p className="error-message" role="alert">{error}</p>
+        <p
+          className="error-message"
+          role="alert"
+        >
+          {error}
+        </p>
       ) : null}
 
-      {message ? <p className="status-message">{message}</p> : null}
+      {/* Success message */}
+      {message ? (
+        <p className="status-message">
+          {message}
+        </p>
+      ) : null}
 
+      {/* Sermon metadata */}
       {metadata ? (
         <section className="metadata-card">
           <div>
-            <p className="eyebrow">Sermon analyzed</p>
+            <p className="eyebrow">
+              Sermon analyzed
+            </p>
+
             <h2>{metadata.title}</h2>
+
             <div className="metadata-details">
-              <span>Speaker: {metadata.speaker}</span>
-              <span>{metadata.duration} · Published {metadata.publishedAt}</span>
+              <span>
+                Speaker: {metadata.speaker}
+              </span>
+
+              <span>
+                {metadata.duration} · Published{" "}
+                {metadata.publishedAt}
+              </span>
             </div>
-            <p className="metadata-description">{metadata.description}</p>
           </div>
 
           {metadata.thumbnail ? (
@@ -124,9 +158,10 @@ export default function SermonForm() {
         </section>
       ) : null}
 
-      {sermonNote && metadata && (
-        <SermonNoteView sermonNote={sermonNote} metadata={metadata}/>
-      )}
+      {/* Generated sermon notes */}
+      {sermonNote ? (
+        <SermonNoteView sermonNote={sermonNote}/>
+      ) : null}
     </>
   );
 }

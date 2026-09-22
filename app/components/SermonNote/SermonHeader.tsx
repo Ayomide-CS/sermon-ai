@@ -12,14 +12,14 @@ export default function SermonHeader({
   duration,
 }: SermonHeaderProps) {
   return (
-    <header>
+    <header className="sermon-header">
+      <p className="eyebrow">Sermon</p>
+
       <h1>{title}</h1>
 
-      <p>Speaker: {speaker}</p>
-
-      <p>Published: {publishedAt}</p>
-
-      <p>Duration: {duration}</p>
+      <p>
+        {speaker} · {duration} · {publishedAt}
+      </p>
     </header>
   );
 }

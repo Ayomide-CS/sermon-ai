@@ -1,6 +1,5 @@
-import type {SermonMetadata, SermonNote,} from "@/app/types/sermon";
+import type { SermonNote } from "@/app/types/sermon";
 
-import SermonHeader from "./SermonHeader";
 import Overview from "./Overview";
 import MainPoints from "./MainPoints";
 import KeyLessons from "./KeyLessons";
@@ -11,39 +10,56 @@ import ReflectionQuestions from "./ReflectionQuestions";
 
 type SermonNoteViewProps = {
   sermonNote: SermonNote;
-  metadata: SermonMetadata;
 };
 
 export default function SermonNoteView({
   sermonNote,
-  metadata,
 }: SermonNoteViewProps) {
   return (
-    <div>
-      <SermonHeader
-        title={metadata.title}
-        speaker={metadata.speaker}
-        publishedAt={metadata.publishedAt}
-        duration={metadata.duration}
-      />
+    <section className="sermon-note">
 
-      <Overview overview={sermonNote.overview} />
+      <div className="note-heading">
+        <div>
+          <h2>Sermon Notes</h2>
 
-      <MainPoints mainPoints={sermonNote.mainPoints} />
+          <p>
+            Generated from the sermon transcript
+          </p>
+        </div>
+      </div>
 
-      <KeyLessons keyLessons={sermonNote.keyLessons} />
+      <div className="note-grid">
 
-      <KeyQuotes keyQuotes={sermonNote.keyQuotes} />
+        <Overview
+          overview={sermonNote.overview}
+        />
 
-      <PracticalApplications
-        practicalApplications={sermonNote.practicalApplications}
-      />
+        <MainPoints
+          mainPoints={sermonNote.mainPoints}
+        />
 
-      <PrayerPoints prayerPoints={sermonNote.prayerPoints} />
+        <KeyLessons
+          keyLessons={sermonNote.keyLessons}
+        />
 
-      <ReflectionQuestions
-        reflectionQuestions={sermonNote.reflectionQuestions}
-      />
-    </div>
+        <KeyQuotes
+          keyQuotes={sermonNote.keyQuotes}
+        />
+
+        <PracticalApplications
+          practicalApplications={sermonNote.practicalApplications}
+        />
+
+        <PrayerPoints
+          prayerPoints={sermonNote.prayerPoints}
+        />
+
+        <ReflectionQuestions
+          reflectionQuestions={sermonNote.reflectionQuestions}
+        />
+
+      </div>
+
+    </section>
   );
 }
