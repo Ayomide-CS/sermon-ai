@@ -3,8 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import SermonNoteView from "./SermonNote/SermonNoteView"
-
-import type {SermonMetadata, SermonNote,} from "@/app/types/sermon";
+import type { SermonMetadata, SermonNote,} from "@/app/types/sermon";
 
 export default function SermonForm() {
   const [url, setUrl] = useState("");
@@ -125,8 +124,8 @@ export default function SermonForm() {
         </section>
       ) : null}
 
-      {sermonNote && (
-        <SermonNoteView sermonNote = {sermonNote} />
+      {sermonNote && metadata && (
+        <SermonNoteView sermonNote={sermonNote} metadata={metadata}/>
       )}
     </>
   );

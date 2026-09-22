@@ -1,13 +1,3 @@
-export type SermonNote = {
-  overview: string;
-  mainPoints: string[];
-  keyLessons: string[];
-  keyQuotes: string[];
-  practicalApplications: string[];
-  prayerPoints: string[];
-  reflectionQuestions: string[];
-};
-
 export type SermonMetadata = {
   videoId: string;
   title: string;
@@ -16,4 +6,14 @@ export type SermonMetadata = {
   thumbnail?: string;
   publishedAt: string;
   duration: string;
+};
+
+export type SermonNote = {
+  overview: string;
+  mainPoints: string[];
+  keyLessons: string[];
+  keyQuotes: string[];
+  practicalApplications: string[];
+  prayerPoints: string[];
+  reflectionQuestions: string[];
 };
