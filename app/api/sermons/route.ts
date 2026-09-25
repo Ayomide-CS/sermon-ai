@@ -1,6 +1,5 @@
 import {getYouTubeVideoId, getYouTubeVideoMetadata,} from "@/app/lib/youtube";
 import { getYouTubeTranscript } from "@/app/lib/transcript";
-import { generateSermonNote } from "@/app/lib/ai";
 
 export async function POST(request: Request) {
   // Step 1: Parse request body
@@ -102,20 +101,21 @@ export async function POST(request: Request) {
       );
     }
 
-    const sermonNote = await generateSermonNote(
-      transcriptResult.data.text,
-      {
-        title: metadata.title,
-        description: metadata.description,
-        speaker: metadata.speaker,
-        publishedAt: metadata.publishedAt,
-      }
-    );
+    if (transcriptResult.status === "AVAILABLE") {
+  return Response.json(
+    {
+      message: "Sermon ready for analysis.",
+      metadata,
+      transcript: transcriptResult.data,
+    },
+    { status: 200 }
+  );
+}
 
     return Response.json({
       message: "Sermon analyzed successfully.",
       metadata,
-      sermonNote,
+
     });
   } catch (error) {
     console.error("YouTube metadata error:", error);
