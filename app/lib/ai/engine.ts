@@ -3,7 +3,7 @@ import type {
   SermonNote,
 } from "@/app/types/sermon";
 
-import { GeminiSermonProvider } from "./gemini";
+import { GeminiSermonProvider } from "./providers/gemini";
 
 const geminiProvider =
   new GeminiSermonProvider();

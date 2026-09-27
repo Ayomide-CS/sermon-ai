@@ -5,7 +5,7 @@ import type {
   SermonNote,
 } from "@/app/types/sermon";
 
-import type { SermonAIProvider } from "./providers";
+import type { SermonAIProvider } from "../provider";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
