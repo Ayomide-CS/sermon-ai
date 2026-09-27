@@ -5,7 +5,7 @@ export default function Home() {
       <div className="sermon-container">
         <header className="sermon-header">
           <p className="eyebrow">Your study companion</p>
-          <h1>Sermon AI</h1>
+          <h1>SermonAI</h1>
           <p>Turn sermons into personal Bible study notes you can return to, reflect on, and live out.</p>
         </header>
         <SermonForm />

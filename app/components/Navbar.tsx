@@ -6,8 +6,8 @@ import { useState } from "react";
 const links = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
-  { href: "/dashboard", label: "Dashboard" },
   { href: "/sermons", label: "Sermons" },
+  { href: "/dashboard", label: "Dashboard" },
 ];
 
 export default function Navbar() {
@@ -17,7 +17,7 @@ export default function Navbar() {
     <nav className="site-nav" aria-label="Main navigation">
       <div className="site-nav__inner">
         <Link className="site-nav__brand" href="/" onClick={() => setIsOpen(false)}>
-          Sermon AI
+          SermonAI
         </Link>
 
         <button
