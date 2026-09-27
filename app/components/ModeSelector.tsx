@@ -1,7 +1,10 @@
 "use client";
 
 type ModeSelectorProps = {
-  onSelect: (mode: "structured" | "ai") => void;
+  onSelect: (
+    mode: "structured" | "ai"
+  ) => void;
+
   isProcessing: boolean;
 };
 
@@ -12,42 +15,64 @@ export default function ModeSelector({
   return (
     <section className="mode-selector">
       <div className="mode-selector__header">
-        <p className="eyebrow">Choose your experience</p>
+        <p className="eyebrow">
+          Choose your experience
+        </p>
 
-        <h2>How would you like your sermon notes?</h2>
+        <h2>
+          How would you like your sermon notes?
+        </h2>
 
         <p>
-          Choose between a transcript-based structured note or deeper AI-powered analysis.</p>
+          Choose between transcript-based notes
+          or deeper AI-powered study notes.
+        </p>
       </div>
 
       <div className="mode-selector__options">
+        {/* =====================================
+            TRANSCRIPT NOTES
+        ====================================== */}
 
         <button
           type="button"
-          onClick={() => onSelect("structured")}
+          onClick={() =>
+            onSelect("structured")
+          }
           disabled={isProcessing}
         >
-          <strong>Structured Notes</strong>
+          <strong>
+            Transcript Notes
+          </strong>
 
           <span>
-            Organize the sermon directly from the
-            transcript without AI interpretation.
+            Organize information directly from
+            the sermon transcript without AI
+            analysis.
           </span>
         </button>
+
+        {/* =====================================
+            AI STUDY NOTES
+        ====================================== */}
 
         <button
           type="button"
-          onClick={() => onSelect("ai")}
+          onClick={() =>
+            onSelect("ai")
+          }
           disabled={isProcessing}
         >
-          <strong>AI-Powered Notes</strong>
+          <strong>
+            AI Study Notes
+          </strong>
 
           <span>
-            Use AI to analyze the sermon and produce
-            deeper structured study notes.
+            Let AI understand the sermon
+            structure, themes, teachings,
+            applications, and study points.
           </span>
         </button>
-
       </div>
     </section>
   );
