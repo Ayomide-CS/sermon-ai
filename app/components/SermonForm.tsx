@@ -5,40 +5,8 @@ import { useState } from "react";
 import ModeSelector from "./ModeSelector";
 import SermonNoteView from "./SermonNote/SermonNoteView";
 import type { SermonMetadata, SermonNote } from "@/app/types/sermon";
+import { buildStructuredNote } from "../lib/engines/structured";
 
-const buildStructuredNote = (transcript: string): SermonNote => {
-  const cleanedTranscript = transcript.replace(/\s+/g, " ").trim();
-  const sentences = cleanedTranscript
-    .split(/(?<=[.!?])\s+/)
-    .map((sentence) => sentence.trim())
-    .filter(Boolean);
-
-  const overview =
-    sentences.slice(0, 2).join(" ").slice(0, 500) ||
-    "The sermon centered on biblical truth, practical obedience, and spiritual growth.";
-
-  return {
-    overview,
-    mainPoints: sentences.slice(0, 3).map((sentence, index) => `${index + 1}. ${sentence}`),
-    keyLessons: sentences.slice(3, 6).map((sentence) => sentence.trim()),
-    keyQuotes: sentences.slice(0, 3).map((sentence) => sentence.trim()),
-    practicalApplications: [
-      "Reflect on how the sermon applies to your daily life.",
-      "Write down one concrete action you can take this week.",
-      "Pray for wisdom to live out the teaching faithfully.",
-    ],
-    prayerPoints: [
-      "Ask God to deepen your understanding of His Word.",
-      "Pray for obedience to the sermon’s application.",
-      "Ask for courage to live out the truth faithfully.",
-    ],
-    reflectionQuestions: [
-      "What stood out most to me from this sermon?",
-      "Which truth challenged or encouraged me most?",
-      "How will I respond in prayer and obedience this week?",
-    ],
-  };
-};
 
 export default function SermonForm() {
   const [url, setUrl] = useState("");
@@ -51,30 +19,40 @@ export default function SermonForm() {
   const [selectedMode, setSelectedMode] = useState<"structured" | "ai" | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleModeSelect = (mode: "structured" | "ai") => {
-    if (!transcript || !metadata) {
-      setError("Transcript is not available.");
-      return;
-    }
+    const handleModeSelect = (
+  mode: "structured" | "ai"
+) => {
+  if (!transcript || !metadata) {
+    setError("Transcript is not available.");
+    return;
+  }
 
-    setSelectedMode(mode);
-    setIsProcessing(true);
-    setError("");
+  setSelectedMode(mode);
+  setIsProcessing(true);
+  setError("");
+
+  if (mode === "structured") {
     setMessage(
-      mode === "structured"
-        ? "Generating structured notes from the transcript..."
-        : "Generating AI-inspired sermon notes..."
+      "Generating structured notes from the transcript..."
     );
 
     const note = buildStructuredNote(transcript);
+
     setSermonNote(note);
+
     setIsProcessing(false);
-    setMessage(
-      mode === "structured"
-        ? "Structured notes are ready."
-        : "AI-inspired notes are ready."
-    );
-  };
+
+    setMessage("Structured notes are ready.");
+
+    return;
+  }
+
+  setIsProcessing(false);
+
+  setMessage(
+    "AI-powered sermon notes are coming next."
+  );
+};
 
   const handleSubmit = async (
     event: React.FormEvent<HTMLFormElement>
@@ -141,7 +119,7 @@ export default function SermonForm() {
           />
 
           <button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Analyzing..." : "Create notes"}
+            {isSubmitting ? "Loading sermon..." : "Continue"}
           </button>
         </div>
       </form>
@@ -157,7 +135,7 @@ export default function SermonForm() {
       {metadata ? (
         <section className="metadata-card">
           <div>
-            <p className="eyebrow">Sermon analyzed</p>
+            <p className="eyebrow">Sermon ready</p>
 
             <h2>{metadata.title}</h2>
 

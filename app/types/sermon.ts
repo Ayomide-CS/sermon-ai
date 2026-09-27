@@ -13,6 +13,7 @@ export type SermonNote = {
   mainPoints: string[];
   keyLessons: string[];
   keyQuotes: string[];
+  bibleReferences: string[];
   practicalApplications: string[];
   prayerPoints: string[];
   reflectionQuestions: string[];

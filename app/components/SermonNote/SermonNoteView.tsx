@@ -7,6 +7,7 @@ import KeyQuotes from "./KeyQuotes";
 import PracticalApplications from "./PracticalApplications";
 import PrayerPoints from "./PrayerPoints";
 import ReflectionQuestions from "./ReflectionQuestions";
+import BibleReferences from "./BibleReferences";
 
 type SermonNoteViewProps = {
   sermonNote: SermonNote;
@@ -34,9 +35,9 @@ export default function SermonNoteView({
           overview={sermonNote.overview}
         />
 
-        <MainPoints
-          mainPoints={sermonNote.mainPoints}
-        />
+         <BibleReferences bibleReferences={sermonNote.bibleReferences}/>
+
+        <MainPoints mainPoints={sermonNote.mainPoints}/>
 
         <KeyLessons
           keyLessons={sermonNote.keyLessons}

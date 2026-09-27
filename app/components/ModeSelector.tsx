@@ -17,9 +17,7 @@ export default function ModeSelector({
         <h2>How would you like your sermon notes?</h2>
 
         <p>
-          Choose between a transcript-based structured
-          note or deeper AI-powered analysis.
-        </p>
+          Choose between a transcript-based structured note or deeper AI-powered analysis.</p>
       </div>
 
       <div className="mode-selector__options">
