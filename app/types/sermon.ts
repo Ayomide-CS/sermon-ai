@@ -18,3 +18,16 @@ export type SermonNote = {
   prayerPoints: string[];
   reflectionQuestions: string[];
 };
+
+export type SermonSectionAnalysis = {
+  sectionNumber: number;
+  summary: string;
+  themes: string[];
+  mainPoints: string[];
+  keyLessons: string[];
+  keyQuotes: string[];
+  bibleReferences: string[];
+  practicalApplications: string[];
+  prayerPoints: string[];
+  reflectionQuestions: string[];
+};

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { generateSermonNotes } from "@/app/lib/ai/engine";
 
 import type { SermonMetadata } from "@/app/types/sermon";
+import { chunkTranscript } from "@/app/lib/ai/chunker";
 
 export async function POST(
   request: Request
@@ -50,6 +51,26 @@ export async function POST(
       );
     }
 
+    const chunks = chunkTranscript(transcript);
+
+    console.log(
+      "Transcript length:",
+      transcript.length
+    );
+
+    console.log(
+      "Number of chunks:",
+      chunks.length
+    );
+
+    console.log(
+      "Chunk sizes:",
+      chunks.map(
+        (chunk) => chunk.text.length
+      )
+    );
+
+    
     const sermonNote =
       await generateSermonNotes(
         transcript,
