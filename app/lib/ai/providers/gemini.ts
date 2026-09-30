@@ -18,18 +18,88 @@ const ai = new GoogleGenAI({
   apiKey,
 });
 
-/*
-|--------------------------------------------------------------------------
-| Sermon Note Schema
-|--------------------------------------------------------------------------
-|
-| This is the final structure returned after all sermon sections
-| have been analyzed and synthesized.
-|
-*/
+// ==================================================
+// RETRY HELPER
+// ==================================================
+
+async function generateWithRetry(
+  request: () => Promise<any>,
+  maxRetries = 3
+) {
+  let delay = 2000;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await request();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : String(error);
+
+      const cause =
+        error instanceof Error && error.cause
+          ? String(error.cause)
+          : "";
+
+      const errorText =
+        `${message} ${cause}`.toLowerCase();
+
+      // ============================================
+      // DO NOT RETRY QUOTA EXHAUSTION
+      // ============================================
+
+      if (
+        errorText.includes("429") ||
+        errorText.includes("resource_exhausted") ||
+        errorText.includes("quota exceeded") ||
+        errorText.includes("free_tier_requests")
+      ) {
+        throw error;
+      }
+
+      // ============================================
+      // RETRY TEMPORARY SERVICE / NETWORK ERRORS
+      // ============================================
+
+      const isRetryable =
+        errorText.includes("503") ||
+        errorText.includes("unavailable") ||
+        errorText.includes("high demand") ||
+        errorText.includes("fetch failed") ||
+        errorText.includes("connect timeout") ||
+        errorText.includes("connect_timeout") ||
+        errorText.includes("und_err_connect_timeout");
+
+      if (!isRetryable || attempt === maxRetries) {
+        throw error;
+      }
+
+      console.log(
+        `Gemini request failed temporarily. ` +
+        `Retrying in ${delay / 1000}s...`
+      );
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, delay)
+      );
+
+      delay *= 2;
+    }
+  }
+
+  throw new Error(
+    "Gemini request failed after multiple attempts."
+  );
+}
+
+// ==================================================
+// FINAL SERMON NOTE SCHEMA
+// ==================================================
 
 const sermonNoteSchema = {
   type: "object",
+
   properties: {
     overview: {
       type: "string",
@@ -97,14 +167,9 @@ const sermonNoteSchema = {
   ],
 };
 
-/*
-|--------------------------------------------------------------------------
-| Section Analysis Schema
-|--------------------------------------------------------------------------
-|
-| Each chunk of a long sermon is analyzed separately first.
-|
-*/
+// ==================================================
+// SECTION ANALYSIS SCHEMA
+// ==================================================
 
 const sectionAnalysisSchema = {
   type: "object",
@@ -189,20 +254,16 @@ const sectionAnalysisSchema = {
   ],
 };
 
-/*
-|--------------------------------------------------------------------------
-| Gemini Sermon Provider
-|--------------------------------------------------------------------------
-*/
+// ==================================================
+// GEMINI PROVIDER
+// ==================================================
 
 export class GeminiSermonProvider
   implements SermonAIProvider
 {
-  /*
-  |--------------------------------------------------------------------------
-  | Analyze One Sermon Section
-  |--------------------------------------------------------------------------
-  */
+  // ==================================================
+  // ANALYZE ONE SECTION
+  // ==================================================
 
   async analyzeSection(
     transcript: string,
@@ -216,76 +277,56 @@ You are the sermon analysis engine for SermonAI.
 You are analyzing ONE SECTION of a larger sermon.
 
 Your job is to carefully understand this section and extract
-the information that is actually supported by the transcript.
+information that is actually supported by the transcript.
 
-==================================================
-SOURCE OF TRUTH
-==================================================
+SOURCE OF TRUTH:
 
 The sermon transcript is the primary source of truth.
 
-You may use the supplied sermon metadata for context.
-
-Do NOT use outside knowledge to introduce teachings, claims,
+Do not use outside knowledge to introduce teachings, claims,
 Bible references, quotes, stories, or statements that are not
 supported by the transcript.
 
-Do NOT invent information.
+Do not invent information.
 
 If the transcript does not provide enough evidence for a category,
 return an empty array for that category.
 
-==================================================
-CLASSIFICATION RULES
-==================================================
+CLASSIFICATION RULES:
 
-Carefully distinguish between the following:
+MAIN POINTS:
+Identify the major teachings or ideas communicated by the preacher.
 
-MAIN POINTS
-- Major teachings or ideas communicated by the preacher.
-- Do not simply select random sentences.
-- Look for the actual progression of the sermon.
+KEY LESSONS:
+Identify important truths or lessons communicated in this section.
 
-KEY LESSONS
-- Important truths or lessons communicated in this section.
-- They should reflect what the preacher actually teaches.
+KEY QUOTES:
+Only include notable statements that actually appear in the transcript.
+Do not create or rewrite quotations.
 
-KEY QUOTES
-- Only include notable statements that actually appear in the transcript.
-- Do not create or rewrite quotations.
-- Do not classify something as a quote simply because it is short.
+BIBLE REFERENCES:
+Only include Bible references explicitly mentioned or clearly
+identifiable from the transcript.
 
-BIBLE REFERENCES
-- Only include Bible references that are explicitly mentioned
-  or clearly identifiable from the transcript.
-- Do not invent Bible references.
+PRACTICAL APPLICATIONS:
+Only include actions, instructions, practices, or applications
+actually communicated by the preacher.
 
-PRACTICAL APPLICATIONS
-- Only include actions, instructions, practices, or applications
-  that the preacher actually communicates.
-- Do not turn every teaching into an application.
+PRAYER POINTS:
+Only include prayer points or prayer requests actually expressed
+by the preacher.
 
-PRAYER POINTS
-- Only include prayer points or prayer requests actually expressed
-  by the preacher.
-- Do not create generic prayers.
-- Do not classify something as a prayer point merely because
-  the word "pray" appears.
+REFLECTION QUESTIONS:
+These may be generated from the content, but they must remain
+faithful to the actual teaching.
 
-REFLECTION QUESTIONS
-- These may be generated from the content of the section.
-- They must remain faithful to the actual teaching.
-- Do not introduce unrelated ideas.
+THEMES:
+Identify the major themes actually present in this section.
 
-THEMES
-- Identify the major themes actually present in this section.
+SUMMARY:
+Give a concise but faithful summary of this section.
 
-SUMMARY
-- Give a concise but faithful summary of this section.
-
-==================================================
-SERMON METADATA
-==================================================
+SERMON METADATA:
 
 Title:
 ${metadata.title}
@@ -299,45 +340,35 @@ ${metadata.publishedAt}
 YouTube Video ID:
 ${metadata.videoId}
 
-==================================================
-SECTION INFORMATION
-==================================================
+SECTION:
 
-Section:
-${sectionNumber} of ${totalSections}
+Section ${sectionNumber} of ${totalSections}
 
-==================================================
-TRANSCRIPT SECTION
-==================================================
+TRANSCRIPT:
 
 ${transcript}
 
-==================================================
-FINAL INSTRUCTION
-==================================================
+Analyze only the supplied transcript section.
 
-Analyze ONLY the supplied transcript section.
-
-Preserve the theological context and meaning of the preacher.
-
-Do not add external theology.
+Preserve the preacher's intended meaning.
 
 Do not hallucinate.
 
 Return the requested structured JSON.
 `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+    const response = await generateWithRetry(() =>
+      ai.models.generateContent({
+        model: "gemini-3.8-flash",
 
-      contents: prompt,
+        contents: prompt,
 
-      config: {
-        responseMimeType: "application/json",
-
-        responseSchema: sectionAnalysisSchema,
-      },
-    });
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: sectionAnalysisSchema,
+        },
+      })
+    );
 
     if (!response.text) {
       throw new Error(
@@ -346,10 +377,9 @@ Return the requested structured JSON.
     }
 
     try {
-      const parsed =
-        JSON.parse(response.text) as SermonSectionAnalysis;
-
-      return parsed;
+      return JSON.parse(
+        response.text
+      ) as SermonSectionAnalysis;
     } catch {
       throw new Error(
         `Gemini returned invalid JSON for section ${sectionNumber}.`
@@ -357,15 +387,9 @@ Return the requested structured JSON.
     }
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | Synthesize Entire Sermon
-  |--------------------------------------------------------------------------
-  |
-  | After every section has been analyzed, Gemini receives the
-  | section analyses and creates the final SermonNote.
-  |
-  */
+  // ==================================================
+  // SYNTHESIZE ENTIRE SERMON
+  // ==================================================
 
   async synthesizeSermon(
     sections: SermonSectionAnalysis[],
@@ -377,42 +401,29 @@ Return the requested structured JSON.
       );
     }
 
-    const sectionMaterial = sections
-      .map((section) => {
-        return `
-==================================================
-SECTION ${section.sectionNumber}
-==================================================
+    const sectionMaterial = sections.map((section) => `
+  SECTION ${section.sectionNumber}
 
-SUMMARY:
-${section.summary}
+  SUMMARY:
+  ${section.summary}
 
-THEMES:
-${section.themes.join("\n")}
+  MAIN POINTS:
+  ${section.mainPoints.join("\n")}
 
-MAIN POINTS:
-${section.mainPoints.join("\n")}
+  KEY LESSONS:
+  ${section.keyLessons.join("\n")}
 
-KEY LESSONS:
-${section.keyLessons.join("\n")}
+  BIBLE REFERENCES:
+  ${section.bibleReferences.join("\n")}
 
-KEY QUOTES:
-${section.keyQuotes.join("\n")}
+  PRACTICAL APPLICATIONS:
+  ${section.practicalApplications.join("\n")}
 
-BIBLE REFERENCES:
-${section.bibleReferences.join("\n")}
-
-PRACTICAL APPLICATIONS:
-${section.practicalApplications.join("\n")}
-
-PRAYER POINTS:
-${section.prayerPoints.join("\n")}
-
-REFLECTION QUESTIONS:
-${section.reflectionQuestions.join("\n")}
-`;
-      })
-      .join("\n\n");
+  PRAYER POINTS:
+  ${section.prayerPoints.join("\n")}
+  `
+    )
+    .join("\n\n");
 
     const prompt = `
 You are the final synthesis engine for SermonAI.
@@ -420,12 +431,9 @@ You are the final synthesis engine for SermonAI.
 You have received structured analyses from multiple sections
 of the SAME sermon.
 
-Your task is to combine them into one coherent, detailed,
-accurate Sermon Note.
+Combine them into one coherent, detailed, accurate Sermon Note.
 
-==================================================
-SOURCE OF TRUTH
-==================================================
+SOURCE OF TRUTH:
 
 The section analyses were created directly from the sermon transcript.
 
@@ -437,82 +445,46 @@ Bible references, quotes, stories, or preacher statements.
 
 Do not invent information.
 
-==================================================
-SYNTHESIS RULES
-==================================================
+SYNTHESIS RULES:
 
-OVERVIEW
-- Provide a concise but meaningful summary of the entire sermon.
-- Capture the central message and overall direction.
+OVERVIEW:
+Provide a concise but meaningful summary of the entire sermon.
 
-MAIN POINTS
-- Identify the major teachings across the entire sermon.
-- Combine related points where appropriate.
-- Remove duplicates.
-- Preserve the logical progression of the sermon where possible.
+MAIN POINTS:
+Identify the major teachings across the entire sermon.
+Combine related points and remove duplicates.
 
-KEY LESSONS
-- Combine the important truths communicated throughout the sermon.
-- Remove repetition.
-- Do not turn unrelated statements into lessons.
+KEY LESSONS:
+Combine important truths communicated throughout the sermon.
 
-KEY QUOTES
-- Only use quotations that actually appeared in the supplied
-  section analyses.
-- Do not rewrite them as quotations.
-- Do not create new quotes.
+KEY QUOTES:
+Only use quotations that actually appeared in the section analyses.
+Do not create new quotes.
 
-BIBLE REFERENCES
-- Combine references from the sections.
-- Remove duplicates.
-- Do not add references that were not present in the analyses.
+BIBLE REFERENCES:
+Combine references from the sections and remove duplicates.
+Do not add references that were not present.
 
-PRACTICAL APPLICATIONS
-- Include only applications actually communicated by the preacher.
-- Remove duplicates.
-- Do not invent applications.
+PRACTICAL APPLICATIONS:
+Include only applications actually communicated by the preacher.
 
-PRAYER POINTS
-- Include only prayer points actually expressed in the sermon.
-- Do not generate generic prayers.
-- Remove duplicates.
+PRAYER POINTS:
+Include only prayer points actually expressed in the sermon.
+Do not generate generic prayers.
 
-REFLECTION QUESTIONS
-- Questions may be synthesized from the sermon teaching.
-- Keep them faithful to the sermon.
-- Do not introduce unrelated concepts.
+REFLECTION QUESTIONS:
+Questions may be synthesized from the sermon teaching,
+but must remain faithful to the sermon.
 
-==================================================
-IMPORTANT CLASSIFICATION RULE
-==================================================
+Do not confuse teaching with prayer.
 
-Do not confuse:
+Do not confuse teaching with application.
 
-Teaching
-with
-Prayer
+Do not confuse application with prayer.
 
-Teaching
-with
-Application
+Do not confuse ordinary sentences with quotations.
 
-Application
-with
-Prayer
-
-Quote
-with
-Ordinary Sentence
-
-Reflection Question
-with
-Something the preacher explicitly said
-
-The categories must represent their actual meaning.
-
-==================================================
-SERMON METADATA
-==================================================
+SERMON METADATA:
 
 Title:
 ${metadata.title}
@@ -526,15 +498,9 @@ ${metadata.publishedAt}
 YouTube Video ID:
 ${metadata.videoId}
 
-==================================================
-SECTION ANALYSES
-==================================================
+SECTION ANALYSES:
 
 ${sectionMaterial}
-
-==================================================
-FINAL INSTRUCTION
-==================================================
 
 Synthesize the entire sermon into one coherent Sermon Note.
 
@@ -547,17 +513,18 @@ Do not introduce outside theology.
 Return only the requested structured JSON.
 `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+    const response = await generateWithRetry(() =>
+      ai.models.generateContent({
+        model: "gemini-3.8-flash",
 
-      contents: prompt,
+        contents: prompt,
 
-      config: {
-        responseMimeType: "application/json",
-
-        responseSchema: sermonNoteSchema,
-      },
-    });
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: sermonNoteSchema,
+        },
+      })
+    );
 
     if (!response.text) {
       throw new Error(
@@ -566,10 +533,9 @@ Return only the requested structured JSON.
     }
 
     try {
-      const parsed =
-        JSON.parse(response.text) as SermonNote;
-
-      return parsed;
+      return JSON.parse(
+        response.text
+      ) as SermonNote;
     } catch {
       throw new Error(
         "Gemini returned invalid JSON during final sermon synthesis."

@@ -1,4 +1,4 @@
-const CHUNK_SIZE = 30000;
+const CHUNK_SIZE = 15000;
 const CHUNK_OVERLAP = 1000;
 
 export type TranscriptChunk = {
