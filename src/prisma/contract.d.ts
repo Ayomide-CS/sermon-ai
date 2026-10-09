@@ -34,7 +34,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'db6799d6970a3bb1c39b99e0d7afd9f9755f9b452fc21951a4185a9459dece18'>;
+  StorageHashBase<'4d8df0881d9e4e70e3d7ecd713528a8bc4374143b5557ff8b2b60fae870d927a'>;
 export type ExecutionHash =
   ExecutionHashBase<'df745a08c9ac9b74e0a166bb6b89691e610995f6a81ce7ce31624e095274dbc4'>;
 export type ProfileHash =
@@ -259,6 +259,8 @@ export type FieldOutputTypes = {
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly thumbnailUrl: CodecTypes['pg/text@1']['output'] | null;
       readonly title: CodecTypes['pg/text@1']['output'];
+      readonly transcript: CodecTypes['pg/text@1']['output'] | null;
+      readonly transcriptionMethod: CodecTypes['pg/text@1']['output'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly youtubeUrl: CodecTypes['pg/text@1']['output'];
       readonly youtubeVideoId: CodecTypes['pg/text@1']['output'];
@@ -276,6 +278,8 @@ export type FieldInputTypes = {
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly thumbnailUrl: CodecTypes['pg/text@1']['input'] | null;
       readonly title: CodecTypes['pg/text@1']['input'];
+      readonly transcript: CodecTypes['pg/text@1']['input'] | null;
+      readonly transcriptionMethod: CodecTypes['pg/text@1']['input'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly youtubeUrl: CodecTypes['pg/text@1']['input'];
       readonly youtubeVideoId: CodecTypes['pg/text@1']['input'];
@@ -293,6 +297,8 @@ export type StorageColumnTypes = {
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly thumbnailUrl: CodecTypes['pg/text@1']['output'] | null;
       readonly title: CodecTypes['pg/text@1']['output'];
+      readonly transcript: CodecTypes['pg/text@1']['output'] | null;
+      readonly transcriptionMethod: CodecTypes['pg/text@1']['output'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly youtubeUrl: CodecTypes['pg/text@1']['output'];
       readonly youtubeVideoId: CodecTypes['pg/text@1']['output'];
@@ -310,6 +316,8 @@ export type StorageColumnInputTypes = {
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly thumbnailUrl: CodecTypes['pg/text@1']['input'] | null;
       readonly title: CodecTypes['pg/text@1']['input'];
+      readonly transcript: CodecTypes['pg/text@1']['input'] | null;
+      readonly transcriptionMethod: CodecTypes['pg/text@1']['input'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly youtubeUrl: CodecTypes['pg/text@1']['input'];
       readonly youtubeVideoId: CodecTypes['pg/text@1']['input'];
@@ -327,6 +335,8 @@ export namespace Models {
     status: CodecTypes['pg/text@1']['output'];
     thumbnailUrl: CodecTypes['pg/text@1']['output'] | null;
     title: CodecTypes['pg/text@1']['output'];
+    transcript: CodecTypes['pg/text@1']['output'] | null;
+    transcriptionMethod: CodecTypes['pg/text@1']['output'] | null;
     updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     youtubeUrl: CodecTypes['pg/text@1']['output'];
     youtubeVideoId: CodecTypes['pg/text@1']['output'];
@@ -409,6 +419,16 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
                 };
+                readonly transcript: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly transcriptionMethod: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
                 readonly updatedAt: {
                   readonly nativeType: 'timestamptz';
                   readonly codecId: 'pg/timestamptz-temporal@1';
@@ -487,6 +507,14 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly transcript: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly transcriptionMethod: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly updatedAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -516,6 +544,8 @@ type ContractBase = Omit<
                 readonly status: { readonly column: 'status' };
                 readonly thumbnailUrl: { readonly column: 'thumbnailUrl' };
                 readonly title: { readonly column: 'title' };
+                readonly transcript: { readonly column: 'transcript' };
+                readonly transcriptionMethod: { readonly column: 'transcriptionMethod' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
                 readonly youtubeUrl: { readonly column: 'youtubeUrl' };
                 readonly youtubeVideoId: { readonly column: 'youtubeVideoId' };
