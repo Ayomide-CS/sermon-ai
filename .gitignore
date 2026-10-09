@@ -37,6 +37,19 @@ yarn-error.log*
 # vercel
 .vercel
 
+# temp files / audio staging
+tmp/
+
+# internal docs / planning (keep private)
+TODO.md
+PLAN.md
+AGENTS.md
+CLAUDE.md
+agents/
+.claude/
+.cursor/
+.devin/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

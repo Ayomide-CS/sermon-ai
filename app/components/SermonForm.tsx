@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useState } from "react";
 
-import ModeSelector from "./ModeSelector";
 import SermonNoteView from "./SermonNote/SermonNoteView";
 
 import { buildStructuredNote } from "@/app/lib/engines/structured";
@@ -29,20 +28,16 @@ export default function SermonForm() {
   const [transcript, setTranscript] =
     useState<string | null>(null);
 
-  const [selectedMode, setSelectedMode] =
-    useState<"structured" | "ai" | null>(null);
-
-  const [isProcessing, setIsProcessing] =
-    useState(false);
-
   /*
-   * First stage:
+   * Single deterministic pipeline:
    *
    * YouTube URL
    *     ↓
-   * /api/sermons
+   * /api/sermons (fetches metadata + transcript)
    *     ↓
-   * Metadata + Transcript
+   * buildStructuredNote (regex-based, no AI)
+   *     ↓
+   * Display sermon notes
    */
   const handleSubmit = async (
     event: React.FormEvent<HTMLFormElement>
@@ -65,7 +60,6 @@ export default function SermonForm() {
     setMetadata(null);
     setTranscript(null);
     setSermonNote(null);
-    setSelectedMode(null);
 
     try {
       const response = await fetch("/api/sermons", {
@@ -89,10 +83,15 @@ export default function SermonForm() {
       setMetadata(result.metadata);
       setTranscript(result.transcript.text);
 
-      setMessage(
-        result.message ||
-          "Sermon is ready for analysis."
+      // Generate structured notes deterministically (no AI call)
+      setMessage("Generating sermon notes...");
+
+      const note = buildStructuredNote(
+        result.transcript.text
       );
+
+      setSermonNote(note);
+      setMessage("Sermon notes are ready.");
 
       setUrl("");
     } catch (caughtError) {
@@ -103,101 +102,6 @@ export default function SermonForm() {
       );
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  /*
-   * Second stage:
-   *
-   * Transcript
-   *     ↓
-   * Choose Mode
-   *     ├── Transcript Notes
-   *     └── AI Study Notes
-   */
-  const handleModeSelect = async (
-    mode: "structured" | "ai"
-  ) => {
-    if (!transcript || !metadata) {
-      setError("Transcript is not available.");
-      return;
-    }
-
-    setSelectedMode(mode);
-    setIsProcessing(true);
-    setError("");
-    setMessage("");
-    setSermonNote(null);
-
-    try {
-      /*
-       * TRANSCRIPT NOTES
-       *
-       * No AI call.
-       */
-      if (mode === "structured") {
-        setMessage(
-          "Generating transcript-based notes..."
-        );
-
-        const note =
-          buildStructuredNote(transcript);
-
-        setSermonNote(note);
-
-        setMessage(
-          "Transcript-based notes are ready."
-        );
-
-        return;
-      }
-
-      /*
-       * AI STUDY NOTES
-       *
-       * Browser → Next.js API → Gemini
-       */
-      setMessage(
-        "AI is analyzing the sermon..."
-      );
-
-      const response = await fetch(
-        "/api/sermons/analyze",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            transcript,
-            metadata,
-            mode,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          result.error ||
-            "Failed to generate sermon notes."
-        );
-      }
-
-      setSermonNote(result.sermonNote);
-
-      setMessage(
-        "AI sermon notes are ready."
-      );
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "Something went wrong."
-      );
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -276,8 +180,7 @@ export default function SermonForm() {
               </span>
 
               <span>
-                {metadata.duration} · Published{" "}
-                {metadata.publishedAt}
+                {metadata.duration || "Unknown duration"}
               </span>
             </div>
           </div>
@@ -294,20 +197,7 @@ export default function SermonForm() {
       ) : null}
 
       {/* =========================================
-          STEP 3 — CHOOSE MODE
-      ========================================== */}
-
-      {transcript &&
-      !selectedMode &&
-      !sermonNote ? (
-        <ModeSelector
-          onSelect={handleModeSelect}
-          isProcessing={isProcessing}
-        />
-      ) : null}
-
-      {/* =========================================
-          STEP 4 — SERMON NOTES
+          STEP 3 — SERMON NOTES (Deterministic)
       ========================================== */}
 
       {sermonNote ? (

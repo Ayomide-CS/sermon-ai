@@ -1,15 +1,17 @@
 // use prisma-8
 
 model Sermon {
-  id             Int      @id @default(autoincrement())
-  youtubeUrl     String
-  youtubeVideoId String   @unique
-  title          String
-  speaker        String
-  thumbnailUrl   String?
-  duration       String?
-  publishedAt    TimestamptzString?
-  status         String   @default("ready")
-  createdAt      TimestamptzString @default(now())
-  updatedAt      temporal.updatedAt()
+  id                  Int      @id @default(autoincrement())
+  youtubeUrl          String
+  youtubeVideoId      String   @unique
+  title               String
+  speaker             String
+  thumbnailUrl        String?
+  duration            String?
+  publishedAt         TimestamptzString?
+  status              String   @default("ready")
+  transcript          String?
+  transcriptionMethod String?  // "DETERMINISTIC" | "LOCAL_WHISPER"
+  createdAt           TimestamptzString @default(now())
+  updatedAt           temporal.updatedAt()
 }

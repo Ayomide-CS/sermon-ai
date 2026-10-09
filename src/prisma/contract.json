@@ -71,6 +71,20 @@
                   "kind": "scalar"
                 }
               },
+              "transcript": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "transcriptionMethod": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "updatedAt": {
                 "nullable": false,
                 "type": {
@@ -119,6 +133,12 @@
                 },
                 "title": {
                   "column": "title"
+                },
+                "transcript": {
+                  "column": "transcript"
+                },
+                "transcriptionMethod": {
+                  "column": "transcriptionMethod"
                 },
                 "updatedAt": {
                   "column": "updatedAt"
@@ -197,6 +217,16 @@
                   "nativeType": "text",
                   "nullable": false
                 },
+                "transcript": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "transcriptionMethod": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "updatedAt": {
                   "codecId": "pg/timestamptz-temporal@1",
                   "nativeType": "timestamptz",
@@ -234,7 +264,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "db6799d6970a3bb1c39b99e0d7afd9f9755f9b452fc21951a4185a9459dece18"
+    "storageHash": "4d8df0881d9e4e70e3d7ecd713528a8bc4374143b5557ff8b2b60fae870d927a"
   },
   "execution": {
     "executionHash": "df745a08c9ac9b74e0a166bb6b89691e610995f6a81ce7ce31624e095274dbc4",
