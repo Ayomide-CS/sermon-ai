@@ -34,9 +34,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'4d8df0881d9e4e70e3d7ecd713528a8bc4374143b5557ff8b2b60fae870d927a'>;
+  StorageHashBase<'85cb70d6d33ecf86cb6dece09b498c52a46cb380d94fbd27f4d0e28126e32679'>;
 export type ExecutionHash =
-  ExecutionHashBase<'df745a08c9ac9b74e0a166bb6b89691e610995f6a81ce7ce31624e095274dbc4'>;
+  ExecutionHashBase<'5d345b0dbff12d99196d6fbc013ae417a48af1afa4d91fcaab2ba4740e61b4e2'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -250,9 +250,21 @@ type DefaultLiteralValue<CodecId extends string, Encoded> = CodecId extends keyo
 
 export type FieldOutputTypes = {
   readonly public: {
+    readonly SavedNote: {
+      readonly content: CodecTypes['pg/text@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly customTitle: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly isPublic: CodecTypes['pg/bool@1']['output'];
+      readonly sermonId: CodecTypes['pg/int4@1']['output'] | null;
+      readonly tags: ReadonlyArray<CodecTypes['pg/text@1']['output']>;
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly userId: CodecTypes['pg/int4@1']['output'];
+    };
     readonly Sermon: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly duration: CodecTypes['pg/text@1']['output'] | null;
+      readonly externalProvider: CodecTypes['pg/text@1']['output'] | null;
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly publishedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly speaker: CodecTypes['pg/text@1']['output'];
@@ -262,16 +274,37 @@ export type FieldOutputTypes = {
       readonly transcript: CodecTypes['pg/text@1']['output'] | null;
       readonly transcriptionMethod: CodecTypes['pg/text@1']['output'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly userId: CodecTypes['pg/int4@1']['output'];
       readonly youtubeUrl: CodecTypes['pg/text@1']['output'];
       readonly youtubeVideoId: CodecTypes['pg/text@1']['output'];
+    };
+    readonly User: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly email: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly name: CodecTypes['pg/text@1']['output'] | null;
+      readonly passwordHash: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
   };
 };
 export type FieldInputTypes = {
   readonly public: {
+    readonly SavedNote: {
+      readonly content: CodecTypes['pg/text@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly customTitle: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly isPublic: CodecTypes['pg/bool@1']['input'];
+      readonly sermonId: CodecTypes['pg/int4@1']['input'] | null;
+      readonly tags: ReadonlyArray<CodecTypes['pg/text@1']['input']>;
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly userId: CodecTypes['pg/int4@1']['input'];
+    };
     readonly Sermon: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly duration: CodecTypes['pg/text@1']['input'] | null;
+      readonly externalProvider: CodecTypes['pg/text@1']['input'] | null;
       readonly id: CodecTypes['pg/int4@1']['input'];
       readonly publishedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly speaker: CodecTypes['pg/text@1']['input'];
@@ -281,16 +314,37 @@ export type FieldInputTypes = {
       readonly transcript: CodecTypes['pg/text@1']['input'] | null;
       readonly transcriptionMethod: CodecTypes['pg/text@1']['input'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly userId: CodecTypes['pg/int4@1']['input'];
       readonly youtubeUrl: CodecTypes['pg/text@1']['input'];
       readonly youtubeVideoId: CodecTypes['pg/text@1']['input'];
+    };
+    readonly User: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly email: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly name: CodecTypes['pg/text@1']['input'] | null;
+      readonly passwordHash: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
   };
 };
 export type StorageColumnTypes = {
   readonly public: {
+    readonly SavedNote: {
+      readonly content: CodecTypes['pg/text@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly customTitle: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly isPublic: CodecTypes['pg/bool@1']['output'];
+      readonly sermonId: CodecTypes['pg/int4@1']['output'] | null;
+      readonly tags: ReadonlyArray<CodecTypes['pg/text@1']['output']>;
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly userId: CodecTypes['pg/int4@1']['output'];
+    };
     readonly Sermon: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly duration: CodecTypes['pg/text@1']['output'] | null;
+      readonly externalProvider: CodecTypes['pg/text@1']['output'] | null;
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly publishedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly speaker: CodecTypes['pg/text@1']['output'];
@@ -300,16 +354,37 @@ export type StorageColumnTypes = {
       readonly transcript: CodecTypes['pg/text@1']['output'] | null;
       readonly transcriptionMethod: CodecTypes['pg/text@1']['output'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly userId: CodecTypes['pg/int4@1']['output'];
       readonly youtubeUrl: CodecTypes['pg/text@1']['output'];
       readonly youtubeVideoId: CodecTypes['pg/text@1']['output'];
+    };
+    readonly User: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly email: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly name: CodecTypes['pg/text@1']['output'] | null;
+      readonly passwordHash: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
   };
 };
 export type StorageColumnInputTypes = {
   readonly public: {
+    readonly SavedNote: {
+      readonly content: CodecTypes['pg/text@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly customTitle: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly isPublic: CodecTypes['pg/bool@1']['input'];
+      readonly sermonId: CodecTypes['pg/int4@1']['input'] | null;
+      readonly tags: ReadonlyArray<CodecTypes['pg/text@1']['input']>;
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly userId: CodecTypes['pg/int4@1']['input'];
+    };
     readonly Sermon: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly duration: CodecTypes['pg/text@1']['input'] | null;
+      readonly externalProvider: CodecTypes['pg/text@1']['input'] | null;
       readonly id: CodecTypes['pg/int4@1']['input'];
       readonly publishedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly speaker: CodecTypes['pg/text@1']['input'];
@@ -319,16 +394,40 @@ export type StorageColumnInputTypes = {
       readonly transcript: CodecTypes['pg/text@1']['input'] | null;
       readonly transcriptionMethod: CodecTypes['pg/text@1']['input'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly userId: CodecTypes['pg/int4@1']['input'];
       readonly youtubeUrl: CodecTypes['pg/text@1']['input'];
       readonly youtubeVideoId: CodecTypes['pg/text@1']['input'];
+    };
+    readonly User: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly email: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly name: CodecTypes['pg/text@1']['input'] | null;
+      readonly passwordHash: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
   };
 };
 
 export namespace Models {
+  export type public_SavedNote = {
+    content: CodecTypes['pg/text@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    customTitle: CodecTypes['pg/text@1']['output'] | null;
+    id: CodecTypes['pg/int4@1']['output'];
+    isPublic: CodecTypes['pg/bool@1']['output'];
+    sermonId: CodecTypes['pg/int4@1']['output'] | null;
+    tags: ReadonlyArray<CodecTypes['pg/text@1']['output']>;
+    updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    userId: CodecTypes['pg/int4@1']['output'];
+    sermon: public_Sermon | null;
+    user: public_User;
+    readonly [RelationKeys]?: 'sermon' | 'user';
+  };
   export type public_Sermon = {
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     duration: CodecTypes['pg/text@1']['output'] | null;
+    externalProvider: CodecTypes['pg/text@1']['output'] | null;
     id: CodecTypes['pg/int4@1']['output'];
     publishedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     speaker: CodecTypes['pg/text@1']['output'];
@@ -338,15 +437,31 @@ export namespace Models {
     transcript: CodecTypes['pg/text@1']['output'] | null;
     transcriptionMethod: CodecTypes['pg/text@1']['output'] | null;
     updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    userId: CodecTypes['pg/int4@1']['output'];
     youtubeUrl: CodecTypes['pg/text@1']['output'];
     youtubeVideoId: CodecTypes['pg/text@1']['output'];
-    readonly [RelationKeys]?: never;
+    savedNotes: public_SavedNote[];
+    user: public_User;
+    readonly [RelationKeys]?: 'savedNotes' | 'user';
+  };
+  export type public_User = {
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    email: CodecTypes['pg/text@1']['output'];
+    id: CodecTypes['pg/int4@1']['output'];
+    name: CodecTypes['pg/text@1']['output'] | null;
+    passwordHash: CodecTypes['pg/text@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    savedNotes: public_SavedNote[];
+    sermons: public_Sermon[];
+    readonly [RelationKeys]?: 'savedNotes' | 'sermons';
   };
 }
 
 export declare const models: {
   public: {
+    SavedNote: Models.public_SavedNote;
     Sermon: Models.public_Sermon;
+    User: Models.public_User;
   };
 };
 
@@ -368,6 +483,110 @@ type ContractBase = Omit<
         readonly kind: 'postgres-schema';
         readonly entries: {
           readonly table: {
+            readonly SavedNote: {
+              columns: {
+                readonly content: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+                readonly customTitle: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly id: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'autoincrement()';
+                  };
+                };
+                readonly isPublic: {
+                  readonly nativeType: 'bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                };
+                readonly sermonId: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly tags: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', readonly []>;
+                  };
+                };
+                readonly updatedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                };
+                readonly userId: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'SavedNote_sermonId_idx_b535e798';
+                  readonly prefix: 'SavedNote_sermonId_idx';
+                  readonly columns: readonly ['sermonId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'SavedNote_userId_idx_a489d58a';
+                  readonly prefix: 'SavedNote_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'SavedNote';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'SavedNote';
+                    readonly columns: readonly ['sermonId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Sermon';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly Sermon: {
               columns: {
                 readonly createdAt: {
@@ -377,6 +596,11 @@ type ContractBase = Omit<
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                 };
                 readonly duration: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly externalProvider: {
                   readonly nativeType: 'text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
@@ -434,6 +658,11 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-temporal@1';
                   readonly nullable: false;
                 };
+                readonly userId: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
                 readonly youtubeUrl: {
                   readonly nativeType: 'text';
                   readonly codecId: 'pg/text@1';
@@ -446,8 +675,78 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [{ readonly columns: readonly ['youtubeVideoId'] }];
-              indexes: readonly [];
+              uniques: readonly [{ readonly columns: readonly ['youtubeVideoId', 'userId'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'Sermon_userId_idx_a489d58a';
+                  readonly prefix: 'Sermon_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Sermon';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly User: {
+              columns: {
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+                readonly email: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly id: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'autoincrement()';
+                  };
+                };
+                readonly name: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly passwordHash: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly updatedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['email'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'User_email_idx_46df9cad';
+                  readonly prefix: 'User_email_idx';
+                  readonly columns: readonly ['email'];
+                  readonly unique: false;
+                },
+              ];
               foreignKeys: readonly [];
             };
           };
@@ -461,12 +760,99 @@ type ContractBase = Omit<
   readonly target: 'postgres';
   readonly targetFamily: 'sql';
   readonly roots: {
+    readonly SavedNote: { readonly namespace: 'public' & NamespaceId; readonly model: 'SavedNote' };
     readonly Sermon: { readonly namespace: 'public' & NamespaceId; readonly model: 'Sermon' };
+    readonly User: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
   };
   readonly domain: {
     readonly namespaces: {
       readonly public: {
         readonly models: {
+          readonly SavedNote: {
+            readonly fields: {
+              readonly content: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly customTitle: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly isPublic: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly sermonId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly tags: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly many: true;
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: {
+              readonly sermon: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Sermon';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['sermonId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'SavedNote';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly content: { readonly column: 'content' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly customTitle: { readonly column: 'customTitle' };
+                readonly id: { readonly column: 'id' };
+                readonly isPublic: { readonly column: 'isPublic' };
+                readonly sermonId: { readonly column: 'sermonId' };
+                readonly tags: { readonly column: 'tags' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
           readonly Sermon: {
             readonly fields: {
               readonly createdAt: {
@@ -477,6 +863,10 @@ type ContractBase = Omit<
                 };
               };
               readonly duration: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly externalProvider: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
@@ -522,6 +912,10 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-temporal@1';
                 };
               };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
               readonly youtubeUrl: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -531,13 +925,35 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
             };
-            readonly relations: Record<string, never>;
+            readonly relations: {
+              readonly savedNotes: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'SavedNote';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['sermonId'];
+                };
+              };
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
             readonly storage: {
               readonly table: 'Sermon';
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly duration: { readonly column: 'duration' };
+                readonly externalProvider: { readonly column: 'externalProvider' };
                 readonly id: { readonly column: 'id' };
                 readonly publishedAt: { readonly column: 'publishedAt' };
                 readonly speaker: { readonly column: 'speaker' };
@@ -547,8 +963,79 @@ type ContractBase = Omit<
                 readonly transcript: { readonly column: 'transcript' };
                 readonly transcriptionMethod: { readonly column: 'transcriptionMethod' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly userId: { readonly column: 'userId' };
                 readonly youtubeUrl: { readonly column: 'youtubeUrl' };
                 readonly youtubeVideoId: { readonly column: 'youtubeVideoId' };
+              };
+            };
+          };
+          readonly User: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly email: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly name: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly passwordHash: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly savedNotes: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'SavedNote';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
+                };
+              };
+              readonly sermons: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Sermon';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'User';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly email: { readonly column: 'email' };
+                readonly id: { readonly column: 'id' };
+                readonly name: { readonly column: 'name' };
+                readonly passwordHash: { readonly column: 'passwordHash' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
           };
@@ -585,7 +1072,25 @@ type ContractBase = Omit<
           readonly onCreate: { readonly id: 'instantNow'; readonly kind: 'generator' };
           readonly onUpdate: { readonly id: 'instantNow'; readonly kind: 'generator' };
           readonly ref: {
+            readonly entry: 'SavedNote';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'instantNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'instantNow'; readonly kind: 'generator' };
+          readonly ref: {
             readonly entry: 'Sermon';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'instantNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'instantNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'User';
             readonly field: 'updatedAt';
             readonly namespace: 'public';
           };

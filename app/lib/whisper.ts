@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import type { TranscriptResult } from "./transcript-types";
 
 // ---------------------------------------------------------------------------
@@ -13,11 +13,17 @@ const WHISPER_CLI = process.env.WHISPER_CLI_PATH;
 const WHISPER_MODEL = process.env.WHISPER_MODEL_PATH;
 const AUDIO_TMP_DIR = process.env.AUDIO_TMP_DIR || "tmp/audio";
 
+/** Optional path to a Netscape-format cookies file (exported from browser) */
+const YTDLP_COOKIES_FILE = process.env.YTDLP_COOKIES_FILE;
+
 // ---------------------------------------------------------------------------
-// Types — re-export shared type for convenience
+// Types
 // ---------------------------------------------------------------------------
 
-export type WhisperTranscriptResult = TranscriptResult;
+export interface WhisperOptions {
+  /** Raw Netscape-format cookies string from browser export */
+  cookies?: string;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -46,29 +52,58 @@ function cleanupJobDir(dir: string): void {
   }
 }
 
+/** Write cookies to a temp file and return the path. Returns null on failure. */
+function writeCookiesFile(cookies: string, dir: string): string | null {
+  try {
+    const cookiePath = join(dir, "cookies.txt");
+    writeFileSync(cookiePath, cookies);
+    return cookiePath;
+  } catch {
+    console.error("[whisper] Failed to write cookies file");
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Step 1 — Download audio from YouTube via yt-dlp
 // ---------------------------------------------------------------------------
 
-export function downloadAudio(videoId: string, dir: string): Promise<string> {
+/** Build the yt-dlp argument array with optional cookies */
+function buildYtDlpArgs(
+  videoId: string,
+  outputFile: string,
+  cookies?: string
+): string[] {
+  const args: string[] = [
+    "-f",
+    "bestaudio",
+    "--extract-audio",
+    "--audio-format",
+    "wav",
+    "-o",
+    outputFile,
+    `https://www.youtube.com/watch?v=${videoId}`,
+  ];
+
+  // Priority: user-provided cookies > env cookie file > none
+  if (cookies) {
+    const cookiePath = writeCookiesFile(cookies, join(outputFile, ".."));
+    if (cookiePath) args.unshift("--cookies", cookiePath);
+  } else if (YTDLP_COOKIES_FILE) {
+    args.unshift("--cookies", YTDLP_COOKIES_FILE);
+  }
+
+  return args;
+}
+
+export function downloadAudio(
+  videoId: string,
+  dir: string,
+  cookies?: string
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const outputFile = join(dir, "audio.wav");
-
-    // yt-dlp flags:
-    //   -f bestaudio          → pick the best audio-only stream
-    //   --extract-audio       → extract audio (in case a video container is chosen)
-    //   --audio-format wav    → output as WAV (whisper-cli prefers uncompressed)
-    //   -o                    → output path template
-    const args = [
-      "-f",
-      "bestaudio",
-      "--extract-audio",
-      "--audio-format",
-      "wav",
-      "-o",
-      outputFile,
-      `https://www.youtube.com/watch?v=${videoId}`,
-    ];
+    const args = buildYtDlpArgs(videoId, outputFile, cookies);
 
     execFile("yt-dlp", args, { timeout: 300_000 }, (error, stdout, stderr) => {
       if (error) {
@@ -176,9 +211,13 @@ export function transcribeWithWhisper(
 /**
  * Transcribe a YouTube video using local whisper.cpp.
  * Downloads audio via yt-dlp, then runs whisper-cli on it.
+ *
+ * @param videoId - YouTube video ID
+ * @param options - Optional cookies string (Netscape format) to bypass bot detection
  */
 export async function getWhisperTranscript(
-  videoId: string
+  videoId: string,
+  options?: WhisperOptions
 ): Promise<TranscriptResult> {
   // Validate prerequisites
   if (!WHISPER_CLI || !existsSync(WHISPER_CLI)) {
@@ -194,8 +233,8 @@ export async function getWhisperTranscript(
   const dir = createJobDir();
 
   try {
-    // Download audio
-    const audioPath = await downloadAudio(videoId, dir);
+    // Download audio (with optional cookies)
+    const audioPath = await downloadAudio(videoId, dir, options?.cookies);
 
     // Transcribe
     const result = await transcribeWithWhisper(audioPath, dir);

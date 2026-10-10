@@ -1,17 +1,56 @@
 // use prisma-8
 
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  createdAt     TimestamptzString @default(now())
+  updatedAt     temporal.updatedAt()
+
+  sermons       Sermon[]
+  savedNotes    SavedNote[]
+
+  @@index([email])
+}
+
 model Sermon {
-  id                  Int      @id @default(autoincrement())
+  id                  Int       @id @default(autoincrement())
+  userId              Int
   youtubeUrl          String
-  youtubeVideoId      String   @unique
+  youtubeVideoId      String
   title               String
   speaker             String
   thumbnailUrl        String?
   duration            String?
   publishedAt         TimestamptzString?
-  status              String   @default("ready")
+  status              String    @default("ready")
   transcript          String?
-  transcriptionMethod String?  // "DETERMINISTIC" | "LOCAL_WHISPER"
+  transcriptionMethod String?   // "DETERMINISTIC" | "LOCAL_WHISPER" | "EXTERNAL_GEMINI" | "EXTERNAL_OPENAI"
+  externalProvider    String?   // "gemini" | "openai" (when using external LLM)
   createdAt           TimestamptzString @default(now())
   updatedAt           temporal.updatedAt()
+
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  savedNotes          SavedNote[]
+
+  @@unique([youtubeVideoId, userId])
+  @@index([userId])
+}
+
+model SavedNote {
+  id            Int           @id @default(autoincrement())
+  userId        Int
+  sermonId      Int?
+  customTitle   String?
+  content       String
+  tags          String[]      @default([])
+  isPublic      Boolean       @default(false)
+  createdAt     TimestamptzString @default(now())
+  updatedAt     temporal.updatedAt()
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sermon        Sermon?       @relation(fields: [sermonId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
 }
