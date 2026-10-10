@@ -4,6 +4,38 @@ import { getWhisperTranscript } from "@/app/lib/whisper";
 import { verifyAccessToken, JWT_COOKIE_NAME } from "@/app/lib/jwt";
 import { db } from "@/src/prisma/db";
 
+// ---------------------------------------------------------------------------
+// Timeout wrapper — prevents requests from hanging indefinitely
+// ---------------------------------------------------------------------------
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: NodeJS.Timeout;
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`[timeout] ${label} exceeded ${ms}ms`)),
+        ms
+      );
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
+// ---------------------------------------------------------------------------
+// Timeout wrapper for Prisma 8 queries (AsyncIterableResult → Promise)
+// ---------------------------------------------------------------------------
+async function withTimeoutQuery<T>(fn: () => T, ms: number, label: string): Promise<T> {
+  let timer: NodeJS.Timeout;
+  return Promise.race([
+    fn(),
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`[timeout] ${label} exceeded ${ms}ms`)),
+        ms
+      );
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
 export async function POST(request: Request) {
   const url = new URL(request.url);
   const saveParam = url.searchParams.get("save");
@@ -61,9 +93,19 @@ export async function POST(request: Request) {
   // Step 4: Fetch YouTube metadata
   let metadata;
   try {
-    metadata = await getYouTubeVideoMetadata(videoId);
+    metadata = await withTimeout(
+      getYouTubeVideoMetadata(videoId),
+      180_000, // 3 min — slow networks need time to reach YouTube
+      "youtube metadata"
+    );
   } catch (error) {
     console.error("YouTube metadata error:", error);
+    if (error instanceof Error && error.message.includes("timeout")) {
+      return Response.json(
+        { error: "Connection timed out while fetching video info. Your internet may be slow — please try again." },
+        { status: 504 }
+      );
+    }
     return Response.json(
       { error: "Unable to fetch YouTube video metadata." },
       { status: 502 }
@@ -83,19 +125,51 @@ export async function POST(request: Request) {
 
   if (preferredMode === "whisper") {
     console.log("[sermon] Using local whisper (preferred mode)");
-    const whisperResult = await getWhisperTranscript(videoId);
+    try {
+      const whisperResult = await withTimeout(
+        getWhisperTranscript(videoId),
+        600_000, // 10 min — local whisper needs time to download audio + transcribe
+        "whisper transcription"
+      );
 
-    if (whisperResult.status === "AVAILABLE") {
-      transcriptResult = whisperResult;
-      whisperUsed = true;
-    } else {
-      // Whisper failed or NOT_AVAILABLE — try YouTube transcript as fallback
-      console.log("[sermon] Whisper fell back to YouTube transcript");
-      transcriptResult = await getYouTubeTranscript(videoId);
+      if (whisperResult.status === "AVAILABLE") {
+        transcriptResult = whisperResult;
+        whisperUsed = true;
+      } else {
+        // Whisper failed or NOT_AVAILABLE — try YouTube transcript as fallback
+        console.log("[sermon] Whisper fell back to YouTube transcript");
+        transcriptResult = await withTimeout(
+          getYouTubeTranscript(videoId),
+          15_000, // 15s for YouTube transcript
+          "whisper-fallback transcript"
+        );
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("timeout")) {
+        return Response.json(
+          { error: "Connection timed out while fetching the sermon transcript. Your internet may be slow — please try again." },
+          { status: 504 }
+        );
+      }
+      throw error;
     }
   } else {
     // Default: Try YouTube transcript first, then whisper fallback
-    transcriptResult = await getYouTubeTranscript(videoId);
+    try {
+      transcriptResult = await withTimeout(
+        getYouTubeTranscript(videoId),
+        180_000, // 3 min — slow networks + rate-limit retries need plenty of time
+        "youtube transcript"
+      );
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("timeout")) {
+        return Response.json(
+          { error: "Connection timed out while fetching the sermon transcript. Your internet may be slow — please try again." },
+          { status: 504 }
+        );
+      }
+      throw error;
+    }
 
     if (transcriptResult.status === "VIDEO_UNAVAILABLE") {
       return Response.json(
@@ -107,7 +181,22 @@ export async function POST(request: Request) {
     if (transcriptResult.status === "NOT_AVAILABLE" || transcriptResult.status === "DISABLED") {
       console.log(`[sermon] ${transcriptResult.status} — falling back to whisper.cpp`, { videoId });
 
-      const whisperResult = await getWhisperTranscript(videoId);
+      let whisperResult;
+      try {
+        whisperResult = await withTimeout(
+          getWhisperTranscript(videoId),
+          600_000, // 10 min — local whisper needs time to download audio + transcribe
+          "fallback whisper transcription"
+        );
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("timeout")) {
+          return Response.json(
+            { error: "Connection timed out while fetching the sermon transcript. Your internet may be slow — please try again." },
+            { status: 504 }
+          );
+        }
+        throw error;
+      }
 
       if (whisperResult.status === "AVAILABLE") {
         transcriptResult = whisperResult;
@@ -225,41 +314,53 @@ async function handleSaveSermon(body: unknown, request: Request) {
 
   try {
     // Check if this sermon (by youtubeVideoId + userId) already exists
-    const existing = await db.orm.public.Sermon.first({
-      youtubeVideoId: metadata.videoId,
-      userId: authUser.id,
-    });
+    const existing = await withTimeoutQuery(
+      () => db.orm.public.Sermon.first({
+        youtubeVideoId: metadata.videoId,
+        userId: authUser.id,
+      }),
+      10_000, // 10s for DB query
+      "sermon existence check"
+    );
 
     let sermon;
 
     if (existing) {
       // Update existing sermon using builder pattern: .where().update()
-      sermon = await db.orm.public.Sermon
-        .where({ id: existing.id })
-        .update({
+      sermon = await withTimeoutQuery(
+        () => db.orm.public.Sermon
+          .where({ id: existing.id })
+          .update({
+            title: metadata.title,
+            speaker: metadata.speaker || "Unknown",
+            transcript,
+            transcriptionMethod: (body as any).transcriptionMethod || "DETERMINISTIC",
+            duration: metadata.duration || undefined,
+            thumbnailUrl: metadata.thumbnail || undefined,
+            publishedAt: metadata.publishedAt ? String(new Date(metadata.publishedAt)) : undefined,
+        }),
+        10_000, // 10s for DB update
+        "sermon update"
+      );
+    } else {
+      // Create new sermon — fields directly, no data wrapper
+      sermon = await withTimeoutQuery(
+        () => db.orm.public.Sermon.create({
+          userId: authUser.id,
+          youtubeUrl: `https://www.youtube.com/watch?v=${metadata.videoId}`,
+          youtubeVideoId: metadata.videoId,
           title: metadata.title,
           speaker: metadata.speaker || "Unknown",
           transcript,
           transcriptionMethod: (body as any).transcriptionMethod || "DETERMINISTIC",
+          status: "ready",
           duration: metadata.duration || undefined,
           thumbnailUrl: metadata.thumbnail || undefined,
           publishedAt: metadata.publishedAt ? String(new Date(metadata.publishedAt)) : undefined,
-        });
-    } else {
-      // Create new sermon — fields directly, no data wrapper
-      sermon = await db.orm.public.Sermon.create({
-        userId: authUser.id,
-        youtubeUrl: `https://www.youtube.com/watch?v=${metadata.videoId}`,
-        youtubeVideoId: metadata.videoId,
-        title: metadata.title,
-        speaker: metadata.speaker || "Unknown",
-        transcript,
-        transcriptionMethod: (body as any).transcriptionMethod || "DETERMINISTIC",
-        status: "ready",
-        duration: metadata.duration || undefined,
-        thumbnailUrl: metadata.thumbnail || undefined,
-        publishedAt: metadata.publishedAt ? String(new Date(metadata.publishedAt)) : undefined,
-      });
+        }),
+        10_000, // 10s for DB create
+        "sermon create"
+      );
     }
 
     console.log(`[save] Sermon ${existing ? "updated" : "saved"} for user ${authUser.id}:`, metadata.title);
@@ -289,10 +390,14 @@ async function handleListSermons(request: Request) {
 
   try {
     // Get all sermons for this user, ordered by most recent
-    const sermons = await db.orm.public.Sermon
-      .where({ userId: authUser.id })
-      .orderBy((s) => s.createdAt.desc())
-      .all();
+    const sermons = await withTimeoutQuery(
+      () => db.orm.public.Sermon
+        .where({ userId: authUser.id })
+        .orderBy((s) => s.createdAt.desc())
+        .all(),
+      10_000, // 10s for DB query
+      "sermon list"
+    );
 
     return Response.json(
       { sermons: sermons.map((s) => ({
