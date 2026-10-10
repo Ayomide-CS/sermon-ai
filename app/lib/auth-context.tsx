@@ -86,6 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (res.ok) {
         const data = await res.json();
+        // Persist access token for API calls
+        try { localStorage.setItem("sermon_ai_access_token", data.accessToken); }
+        catch {}
         setState({
           user: data.user,
           accessToken: data.accessToken,
@@ -118,6 +121,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.error || `Registration failed (${res.status})`);
       }
 
+      // Persist access token for API calls
+      try { localStorage.setItem("sermon_ai_access_token", data.accessToken); }
+      catch {}
       setState({
         user: data.user,
         accessToken: data.accessToken,
@@ -148,6 +154,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.error || `Login failed (${res.status})`);
       }
 
+      // Persist access token for API calls
+      try { localStorage.setItem("sermon_ai_access_token", data.accessToken); }
+      catch {}
       setState({
         user: data.user,
         accessToken: data.accessToken,
@@ -171,6 +180,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Ignore errors — still clear local state
     } finally {
+      // Clear persisted access token
+      try { localStorage.removeItem("sermon_ai_access_token"); }
+      catch {}
       setState({
         user: null,
         accessToken: null,

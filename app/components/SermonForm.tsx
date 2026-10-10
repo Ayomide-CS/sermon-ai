@@ -66,10 +66,8 @@ export default function SermonForm() {
 
     try {
       if (selectedMode === "external") {
-        // External LLM path — user provides their own API key
         await handleExternalTranscription(trimmedUrl);
       } else {
-        // Built-in path — deterministic or whisper fallback
         await handleBuiltInTranscription(trimmedUrl);
       }
 
@@ -122,22 +120,8 @@ export default function SermonForm() {
 
     setMessage("Fetching YouTube video info...");
 
-    // First, get metadata from the built-in endpoint (it handles yt-dlp for audio download)
-    const metaResponse = await fetch("/api/sermons", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ youtubeUrl }),
-    });
-
-    if (!metaResponse.ok) {
-      // If built-in fails, try to get just the video ID and proceed with external
-      const errorData = await metaResponse.json().catch(() => ({}));
-      console.warn("[sermon] Built-in fetch failed, proceeding with external only:", errorData);
-    }
-
-    // For external mode, we need the raw transcript text first.
-    // Try deterministic first, then whisper, and if both fail, ask user to paste transcript
     let rawTranscript = "";
+    let metaResult = null;
 
     try {
       const transcriptResponse = await fetch("/api/sermons", {
@@ -149,7 +133,7 @@ export default function SermonForm() {
       if (transcriptResponse.ok) {
         const transcriptData = await transcriptResponse.json();
         rawTranscript = transcriptData.transcript?.text || "";
-        setMetadata(transcriptData.metadata);
+        metaResult = transcriptData.metadata;
       }
     } catch {
       // Will fall through to manual paste prompt
@@ -159,14 +143,13 @@ export default function SermonForm() {
       setMessage(
         "Could not automatically fetch the transcript. Please paste the sermon text below, and we will structure it with your AI provider."
       );
-      // The user can now paste text — handled by a separate flow
       throw new Error("TRANSCRIPT_REQUIRED");
     }
 
     // Now send to external LLM for structuring
-    setMessage(`Structuring with ${selectedMode === "external" ? "AI" : ""}...`);
+    setMessage(`Structuring with cloud AI...`);
 
-    const provider = "openai"; // default, could be made selectable
+    const provider = "openai";
     const structureResponse = await fetch("/api/transcribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -184,10 +167,8 @@ export default function SermonForm() {
 
     const structuredResult = await structureResponse.json();
 
-    // Use the externally structured text
     if (structuredResult.data?.text) {
       setTranscript(structuredResult.data.text);
-      // Build deterministic notes from the cleaned transcript as fallback
       const note = buildStructuredNote(structuredResult.data.text);
       setSermonNote(note);
     } else {
@@ -196,6 +177,7 @@ export default function SermonForm() {
       setSermonNote(note);
     }
 
+    if (metaResult) setMetadata(metaResult);
     setMessage("Sermon notes are ready.");
   };
 
@@ -209,9 +191,17 @@ export default function SermonForm() {
     setSaveMessage("");
 
     try {
-      const response = await fetch("/api/sermons", {
+      // Get auth token from localStorage (set by auth context on login)
+      const accessToken = typeof window !== "undefined" ? localStorage.getItem("sermon_ai_access_token") : null;
+
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (accessToken) {
+        headers["Authorization"] = `Bearer ${accessToken}`;
+      }
+
+      const response = await fetch("/api/sermons?save=1", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           action: "save",
           metadata,
@@ -236,12 +226,6 @@ export default function SermonForm() {
 
   return (
     <>
-      {/* =========================================
-          STEP 0 — MODE SELECTOR
-      ========================================== */}
-
-      <TranscriptModeSelector onModeChange={handleModeChange} />
-
       {/* =========================================
           STEP 1 — YOUTUBE URL FORM
       ========================================== */}
@@ -341,6 +325,16 @@ export default function SermonForm() {
       ========================================== */}
 
       {sermonNote && <SermonNoteView sermonNote={sermonNote} />}
+
+      {/* =========================================
+          STEP 4 — MODE SELECTOR (at bottom, for switching)
+      ========================================== */}
+
+      <div style={{ marginTop: "3rem", paddingTop: "2rem", borderTop: "1px solid var(--line)", maxWidth: "62rem", margin: "3rem auto 0" }}>
+        <p className="eyebrow">Want a different approach?</p>
+        <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1rem" }}>Change transcription method</h3>
+        <TranscriptModeSelector onModeChange={handleModeChange} />
+      </div>
     </>
   );
 }

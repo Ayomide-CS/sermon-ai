@@ -2,9 +2,18 @@ import { getYouTubeVideoId, getYouTubeVideoMetadata } from "@/app/lib/youtube";
 import { getYouTubeTranscript } from "@/app/lib/transcript";
 import { getWhisperTranscript } from "@/app/lib/whisper";
 import { verifyAccessToken, JWT_COOKIE_NAME } from "@/app/lib/jwt";
+import { db } from "@/src/prisma/db";
 
 export async function POST(request: Request) {
-  // Step 1: Parse request body
+  const url = new URL(request.url);
+  const saveParam = url.searchParams.get("save");
+
+  // Handle save action (authenticated)
+  if (saveParam === "1") {
+    return handleSaveSermon(await request.json(), request);
+  }
+
+  // Step 1: Parse request body for transcription
   let body: unknown;
 
   try {
@@ -16,17 +25,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // Step 2: Handle save action (authenticated)
-  if (
-    typeof body === "object" &&
-    body !== null &&
-    "action" in body &&
-    body.action === "save"
-  ) {
-    return handleSaveSermon(body, request);
-  }
-
-  // Step 3: Validate transcription request
+  // Step 2: Validate transcription request
   if (
     typeof body !== "object" ||
     body === null ||
@@ -49,7 +48,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // Step 4: Extract YouTube video ID
+  // Step 3: Extract YouTube video ID
   const videoId = getYouTubeVideoId(youtubeUrl);
 
   if (!videoId) {
@@ -59,7 +58,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // Step 5: Fetch YouTube metadata
+  // Step 4: Fetch YouTube metadata
   let metadata;
   try {
     metadata = await getYouTubeVideoMetadata(videoId);
@@ -78,24 +77,20 @@ export async function POST(request: Request) {
     );
   }
 
-  // Step 6: Get transcript based on mode preference
+  // Step 5: Get transcript based on mode preference
   let transcriptResult;
   let whisperUsed = false;
 
   if (preferredMode === "whisper") {
-    // Skip YouTube transcript, go straight to whisper
     console.log("[sermon] Using local whisper (preferred mode)");
     const whisperResult = await getWhisperTranscript(videoId);
 
     if (whisperResult.status === "AVAILABLE") {
       transcriptResult = whisperResult;
       whisperUsed = true;
-    } else if (whisperResult.status === "ERROR") {
-      // Whisper failed — try YouTube transcript as fallback
-      console.log("[sermon] Whisper failed, falling back to YouTube transcript");
-      transcriptResult = await getYouTubeTranscript(videoId);
     } else {
-      // Whisper NOT_AVAILABLE — try YouTube transcript
+      // Whisper failed or NOT_AVAILABLE — try YouTube transcript as fallback
+      console.log("[sermon] Whisper fell back to YouTube transcript");
       transcriptResult = await getYouTubeTranscript(videoId);
     }
   } else {
@@ -153,7 +148,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // Step 7: Return success response
+  // Step 6: Return success response
   const transcriptionMethod = whisperUsed ? "LOCAL_WHISPER" : "DETERMINISTIC";
 
   return Response.json(
@@ -175,85 +170,147 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const action = url.searchParams.get("action");
 
-  // List sermons endpoint
   if (action === "list") {
     return handleListSermons(request);
   }
 
-  return Response.json({ error: "Invalid request. Use ?action=list to get your sermons." }, { status: 400 });
+  // Default: return empty list for backward compatibility
+  return Response.json({ sermons: [] }, { status: 200 });
 }
 
 // ---------------------------------------------------------------------------
 // Internal handlers
 // ---------------------------------------------------------------------------
 
-async function handleSaveSermon(body: unknown, request: Request) {
-  const safeBody = body as { metadata?: any; transcript?: string; note?: any };
-  const { metadata, transcript, note } = safeBody;
-
-  // Get authenticated user from Bearer token or refresh cookie
+async function getAuthUser(request: Request): Promise<{ id: number; email: string } | null> {
   const authHeader = request.headers.get("authorization");
-  let userId: number | null = null;
 
   if (authHeader?.startsWith("Bearer ")) {
     const payload = await verifyAccessToken(authHeader.slice(7));
-    if (payload) userId = Number(payload.sub);
-  }
-
-  // Fall back to refresh cookie
-  if (!userId) {
-    const cookies = request.headers.get("cookie") || "";
-    const refreshTokenMatch = cookies.match(new RegExp(`${JWT_COOKIE_NAME}=([^;]+)`));
-    if (refreshTokenMatch) {
-      userId = -1; // Placeholder: validated by client-side auth context
+    if (payload) {
+      return { id: Number(payload.sub), email: payload.email };
     }
   }
 
-  if (!userId && userId !== -1) {
+  // Fall back to refresh cookie
+  const cookies = request.headers.get("cookie") || "";
+  const refreshTokenMatch = cookies.match(new RegExp(`${JWT_COOKIE_NAME}=([^;]+)`));
+  if (refreshTokenMatch) {
+    return null; // Can't get user ID from cookie alone without verifying
+  }
+
+  return null;
+}
+
+async function handleSaveSermon(body: unknown, request: Request) {
+  const safeBody = body as { metadata?: any; transcript?: string; note?: any };
+  const { metadata, transcript } = safeBody;
+
+  // Get authenticated user
+  const authUser = await getAuthUser(request);
+
+  if (!authUser) {
     return Response.json(
-      { error: "You must be signed in to save sermons." },
+      { error: "You must be signed in to save sermons. Please sign in or create an account." },
       { status: 401 }
     );
   }
 
-  if (!metadata || !transcript || !note) {
+  if (!metadata || !transcript) {
     return Response.json(
       { error: "Missing sermon data to save." },
       { status: 400 }
     );
   }
 
-  // TODO: Implement actual database save via Prisma
-  console.log(`[save] Sermon saved for user ${userId}:`, metadata.title);
+  try {
+    // Check if this sermon (by youtubeVideoId + userId) already exists
+    const existing = await db.orm.public.Sermon.first({
+      youtubeVideoId: metadata.videoId,
+      userId: authUser.id,
+    });
 
-  return Response.json(
-    { message: "Sermon saved successfully.", sermonId: "temp-id" },
-    { status: 200 }
-  );
+    let sermon;
+
+    if (existing) {
+      // Update existing sermon using builder pattern: .where().update()
+      sermon = await db.orm.public.Sermon
+        .where({ id: existing.id })
+        .update({
+          title: metadata.title,
+          speaker: metadata.speaker || "Unknown",
+          transcript,
+          transcriptionMethod: (body as any).transcriptionMethod || "DETERMINISTIC",
+          duration: metadata.duration || undefined,
+          thumbnailUrl: metadata.thumbnail || undefined,
+          publishedAt: metadata.publishedAt ? String(new Date(metadata.publishedAt)) : undefined,
+        });
+    } else {
+      // Create new sermon — fields directly, no data wrapper
+      sermon = await db.orm.public.Sermon.create({
+        userId: authUser.id,
+        youtubeUrl: `https://www.youtube.com/watch?v=${metadata.videoId}`,
+        youtubeVideoId: metadata.videoId,
+        title: metadata.title,
+        speaker: metadata.speaker || "Unknown",
+        transcript,
+        transcriptionMethod: (body as any).transcriptionMethod || "DETERMINISTIC",
+        status: "ready",
+        duration: metadata.duration || undefined,
+        thumbnailUrl: metadata.thumbnail || undefined,
+        publishedAt: metadata.publishedAt ? String(new Date(metadata.publishedAt)) : undefined,
+      });
+    }
+
+    console.log(`[save] Sermon ${existing ? "updated" : "saved"} for user ${authUser.id}:`, metadata.title);
+
+    return Response.json(
+      { message: "Sermon saved successfully.", sermonId: sermon!.id },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("[save] Database error:", error);
+    return Response.json(
+      { error: "Failed to save sermon to database." },
+      { status: 500 }
+    );
+  }
 }
 
 async function handleListSermons(request: Request) {
-  // Get authenticated user
-  const authHeader = request.headers.get("authorization");
-  let userId: number | null = null;
+  const authUser = await getAuthUser(request);
 
-  if (authHeader?.startsWith("Bearer ")) {
-    const payload = await verifyAccessToken(authHeader.slice(7));
-    if (payload) userId = Number(payload.sub);
-  }
-
-  if (!userId) {
+  if (!authUser) {
     return Response.json(
       { error: "You must be signed in." },
       { status: 401 }
     );
   }
 
-  // TODO: Implement actual database query via Prisma
-  console.log(`[list] Listing sermons for user ${userId}`);
+  try {
+    // Get all sermons for this user, ordered by most recent
+    const sermons = await db.orm.public.Sermon
+      .where({ userId: authUser.id })
+      .orderBy((s) => s.createdAt.desc())
+      .all();
 
-  return Response.json(
-    { sermons: [] },
-    { status: 200 }
-  );
+    return Response.json(
+      { sermons: sermons.map((s) => ({
+        id: s.id,
+        title: s.title,
+        speaker: s.speaker,
+        youtubeUrl: s.youtubeUrl,
+        transcriptionMethod: s.transcriptionMethod,
+        createdAt: s.createdAt,
+        updatedAt: s.updatedAt,
+      }))},
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("[list] Database error:", error);
+    return Response.json(
+      { sermons: [] },
+      { status: 200 }
+    );
+  }
 }

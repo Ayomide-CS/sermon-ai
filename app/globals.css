@@ -120,7 +120,7 @@ input {
     radial-gradient(circle at 12% 8%, rgb(220 233 223 / 72%) 0, transparent 29rem),
     radial-gradient(circle at 92% 22%, rgb(255 240 219 / 75%) 0, transparent 25rem),
     var(--background);
-  padding: clamp(1.25rem, 4vw, 4rem) 1rem 5rem;
+  padding: clamp(6.5rem, 8vw, 7rem) 1rem 5rem;
 }
 
 .sermon-container {
