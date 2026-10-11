@@ -8,7 +8,7 @@ interface SermonEntry {
   title: string;
   speaker: string;
   youtubeUrl: string;
-  transcriptionMethod: string;
+  transcriptionMethod: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -87,38 +87,46 @@ export default function MySermons() {
       ) : (
         <div style={{ display: "grid", gap: "1rem" }}>
           {sermons.map((sermon) => (
-            <div
+            <Link
               key={sermon.id}
+              href={`/sermons/${sermon.id}`}
               style={{
                 background: "var(--paper)",
                 border: "1px solid var(--line)",
                 borderRadius: "1.25rem",
                 padding: "1.5rem",
+                textDecoration: "none",
+                color: "inherit",
                 transition: "box-shadow 160ms ease, transform 120ms ease",
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow)";
-                (e.currentTarget as HTMLDivElement).style.transform = "translateY(-1px)";
+                (e.currentTarget as HTMLElement).style.boxShadow = "var(--shadow)";
+                (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
-                (e.currentTarget as HTMLDivElement).style.transform = "none";
+                (e.currentTarget as HTMLElement).style.boxShadow = "none";
+                (e.currentTarget as HTMLElement).style.transform = "none";
               }}
             >
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: "0 0 0.5rem" }}>
-                {sermon.title}
-              </h3>
-              <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
-                <span style={{ color: "var(--ink-muted)", fontSize: "0.85rem" }}>🎤 {sermon.speaker}</span>
-                <span style={{ color: "var(--ink-muted)", fontSize: "0.85rem" }}>
-                  📝 {sermon.transcriptionMethod === "LOCAL_WHISPER" ? "Local Whisper" : "YouTube Transcript"}
-                </span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: "0 0 0.5rem" }}>
+                    {sermon.title}
+                  </h3>
+                  <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "0.5rem" }}>
+                    <span style={{ color: "var(--ink-muted)", fontSize: "0.85rem" }}>🎤 {sermon.speaker}</span>
+                    <span style={{ color: "var(--ink-muted)", fontSize: "0.85rem" }}>
+                      📝 {sermon.transcriptionMethod === "LOCAL_WHISPER" ? "Local Whisper" : "YouTube Transcript"}
+                    </span>
+                  </div>
+                  <p style={{ color: "var(--ink-muted)", fontSize: "0.8rem", margin: 0 }}>
+                    Saved {new Date(sermon.createdAt).toLocaleDateString()} at{" "}
+                    {new Date(sermon.createdAt).toLocaleTimeString()}
+                  </p>
+                </div>
+                <span style={{ color: "var(--ink-muted)", fontSize: "1.2rem" }}>→</span>
               </div>
-              <p style={{ color: "var(--ink-muted)", fontSize: "0.8rem", margin: 0 }}>
-                Saved {new Date(sermon.createdAt).toLocaleDateString()} at{" "}
-                {new Date(sermon.createdAt).toLocaleTimeString()}
-              </p>
-            </div>
+            </Link>
           ))}
         </div>
       )}

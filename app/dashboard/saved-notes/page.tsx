@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 interface NoteEntry {
   id: number;
   content: string;
-  customTitle?: string;
+  customTitle?: string | null;
   tags: string[];
   sermonId?: number | null;
   isPublic: boolean;
@@ -17,6 +18,7 @@ export default function SavedNotes() {
   const [notes, setNotes] = useState<NoteEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchNotes();
@@ -59,9 +61,11 @@ export default function SavedNotes() {
 
   return (
     <div>
-      <h1 style={{ fontSize: "clamp(1.6rem, 4vw, 2.25rem)", letterSpacing: "-0.045em", marginBottom: "0.5rem" }}>
-        Saved Notes
-      </h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+        <h1 style={{ fontSize: "clamp(1.6rem, 4vw, 2.25rem)", letterSpacing: "-0.045em" }}>
+          Saved Notes
+        </h1>
+      </div>
       <p style={{ color: "var(--ink-muted)", marginBottom: "2rem" }}>Your personal reflections and study notes.</p>
 
       {error && (
@@ -86,14 +90,39 @@ export default function SavedNotes() {
                 border: "1px solid var(--line)",
                 borderRadius: "1.25rem",
                 padding: "1.5rem",
+                transition: "box-shadow 160ms ease",
               }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.boxShadow = "none"; }}
             >
-              <h3 style={{ fontSize: "1.05rem", fontWeight: 700, margin: "0 0 0.5rem" }}>
-                {note.customTitle || `Note #${note.id}`}
-              </h3>
-              <p style={{ color: "var(--ink-muted)", fontSize: "0.9rem", lineHeight: 1.6, margin: "0 0 0.75rem", whiteSpace: "pre-wrap" }}>
-                {note.content.length > 200 ? note.content.slice(0, 200) + "..." : note.content}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+                <h3 style={{ fontSize: "1.05rem", fontWeight: 700, margin: "0 0 0.5rem" }}>
+                  {note.customTitle || `Note #${note.id}`}
+                </h3>
+                {note.sermonId && (
+                  <Link href={`/sermons/${note.sermonId}`} style={{ fontSize: "0.8rem", color: "var(--accent-dark)", textDecoration: "none", whiteSpace: "nowrap" }}>
+                    📖 View Sermon →
+                  </Link>
+                )}
+              </div>
+              
+              <p 
+                style={{ 
+                  color: "var(--ink-muted)", 
+                  fontSize: "0.9rem", 
+                  lineHeight: 1.6, 
+                  margin: "0 0 0.75rem", 
+                  whiteSpace: "pre-wrap",
+                  maxHeight: expandedId === note.id ? "none" : "4.8em",
+                  overflow: "hidden",
+                  cursor: "pointer",
+                }}
+                onClick={() => setExpandedId(expandedId === note.id ? null : note.id)}
+              >
+                {note.content}
+                {note.content.length > 300 && expandedId !== note.id && "..."}
               </p>
+
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
                 {note.tags.map((tag) => (
                   <span key={tag} style={{ background: "var(--accent-soft)", color: "var(--accent-dark)", fontSize: "0.75rem", fontWeight: 600, padding: "0.2rem 0.6rem", borderRadius: "99px" }}>
@@ -101,9 +130,15 @@ export default function SavedNotes() {
                   </span>
                 ))}
               </div>
+              
               <p style={{ color: "var(--ink-muted)", fontSize: "0.8rem", margin: "0.75rem 0 0" }}>
                 Updated {new Date(note.updatedAt).toLocaleDateString()} at{" "}
                 {new Date(note.updatedAt).toLocaleTimeString()}
+                {note.content.length > 300 && (
+                  <span style={{ marginLeft: "0.5rem", color: "var(--accent-dark)", cursor: "pointer" }}>
+                    {expandedId === note.id ? "[show less]" : "[read more]"}
+                  </span>
+                )}
               </p>
             </div>
           ))}

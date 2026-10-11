@@ -252,12 +252,23 @@ export async function POST(request: Request) {
 }
 
 // ---------------------------------------------------------------------------
-// GET — List user's saved sermons (authenticated)
+// GET — List user's saved sermons, fetch a single sermon, or get stats (authenticated)
 // ---------------------------------------------------------------------------
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const action = url.searchParams.get("action");
+  const idParam = url.searchParams.get("id");
+
+  // Get dashboard stats (counts)
+  if (action === "stats") {
+    return handleGetStats(request);
+  }
+
+  // Fetch a single sermon by ID
+  if (action === "get" && idParam) {
+    return handleGetSermon(request, Number(idParam));
+  }
 
   if (action === "list") {
     return handleListSermons(request);
@@ -270,6 +281,44 @@ export async function GET(request: Request) {
 // ---------------------------------------------------------------------------
 // Internal handlers
 // ---------------------------------------------------------------------------
+
+async function handleGetStats(request: Request) {
+  const authUser = await getAuthUser(request);
+
+  if (!authUser) {
+    return Response.json(
+      { error: "You must be signed in." },
+      { status: 401 }
+    );
+  }
+
+  try {
+    // Count sermons
+    const sermonCount = await withTimeoutQuery(
+      () => db.orm.public.Sermon.where({ userId: authUser.id }).count(),
+      10_000,
+      "sermon count"
+    );
+
+    // Count saved notes
+    const noteCount = await withTimeoutQuery(
+      () => db.orm.public.SavedNote.where({ userId: authUser.id }).count(),
+      10_000,
+      "note count"
+    );
+
+    return Response.json(
+      { sermons: sermonCount, notes: noteCount },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("[stats] Database error:", error);
+    return Response.json(
+      { sermons: 0, notes: 0 },
+      { status: 200 }
+    );
+  }
+}
 
 async function getAuthUser(request: Request): Promise<{ id: number; email: string } | null> {
   const authHeader = request.headers.get("authorization");
@@ -373,6 +422,80 @@ async function handleSaveSermon(body: unknown, request: Request) {
     console.error("[save] Database error:", error);
     return Response.json(
       { error: "Failed to save sermon to database." },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleGetSermon(request: Request, sermonId: number) {
+  const authUser = await getAuthUser(request);
+
+  if (!authUser) {
+    return Response.json(
+      { error: "You must be signed in." },
+      { status: 401 }
+    );
+  }
+
+  try {
+    // Fetch the sermon by ID, ensuring it belongs to this user
+    const sermon = await withTimeoutQuery(
+      () => db.orm.public.Sermon.first({
+        id: sermonId,
+        userId: authUser.id,
+      }),
+      10_000,
+      "sermon get"
+    );
+
+    if (!sermon) {
+      return Response.json(
+        { error: "Sermon not found." },
+        { status: 404 }
+      );
+    }
+
+    // Fetch associated saved notes for this sermon
+    const notes = await withTimeoutQuery(
+      () => db.orm.public.SavedNote
+        .where({ sermonId: sermonId, userId: authUser.id })
+        .orderBy((n) => n.createdAt.desc())
+        .all(),
+      10_000,
+      "sermon notes"
+    );
+
+    return Response.json(
+      { sermon: {
+        id: sermon.id,
+        title: sermon.title,
+        speaker: sermon.speaker,
+        youtubeUrl: sermon.youtubeUrl,
+        youtubeVideoId: sermon.youtubeVideoId,
+        transcript: sermon.transcript,
+        transcriptionMethod: sermon.transcriptionMethod,
+        duration: sermon.duration,
+        thumbnailUrl: sermon.thumbnailUrl,
+        publishedAt: sermon.publishedAt,
+        status: sermon.status,
+        createdAt: sermon.createdAt,
+        updatedAt: sermon.updatedAt,
+      },
+      notes: notes.map((n) => ({
+        id: n.id,
+        content: n.content,
+        customTitle: n.customTitle,
+        tags: n.tags,
+        isPublic: n.isPublic,
+        createdAt: n.createdAt,
+        updatedAt: n.updatedAt,
+      }))},
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("[get] Database error:", error);
+    return Response.json(
+      { error: "Failed to fetch sermon." },
       { status: 500 }
     );
   }
