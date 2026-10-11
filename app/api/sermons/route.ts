@@ -1,5 +1,6 @@
 import {getYouTubeVideoId, getYouTubeVideoMetadata,} from "@/app/lib/youtube";
 import { getYouTubeTranscript } from "@/app/lib/transcript";
+import { getWhisperTranscript } from "@/app/lib/whisper";
 
 export async function POST(request: Request) {
   // Step 1: Parse request body
@@ -58,28 +59,9 @@ export async function POST(request: Request) {
       );
     }
 
-    //Step 5b: Fetch YouTube transcript
-    const transcriptResult = await getYouTubeTranscript(videoId);
-
-    if (transcriptResult.status === "DISABLED") {
-      return Response.json(
-        {
-          error: "Transcript is disabled for this sermon.",
-          code: "TRANSCRIPT_DISABLED",
-        },
-        { status: 422 }
-      );
-    }
-
-    if (transcriptResult.status === "NOT_AVAILABLE") {
-      return Response.json(
-        {
-          error: "No transcript is available for this sermon.",
-          code: "TRANSCRIPT_NOT_AVAILABLE",
-        },
-        { status: 422 }
-      );
-    }
+    // Step 5b: Fetch YouTube transcript (deterministic — no vendor)
+    let transcriptResult = await getYouTubeTranscript(videoId);
+    let whisperUsed = false;
 
     if (transcriptResult.status === "VIDEO_UNAVAILABLE") {
       return Response.json(
@@ -89,6 +71,43 @@ export async function POST(request: Request) {
         },
         { status: 404 }
       );
+    }
+
+    // If YouTube transcript failed, fall back to local whisper.cpp
+    if (
+      transcriptResult.status === "NOT_AVAILABLE" ||
+      transcriptResult.status === "DISABLED"
+    ) {
+      console.log(
+        `[sermon] ${transcriptResult.status} — falling back to whisper.cpp`,
+        { videoId }
+      );
+
+      const whisperResult = await getWhisperTranscript(videoId);
+
+      if (whisperResult.status === "AVAILABLE") {
+        transcriptResult = whisperResult;
+        whisperUsed = true;
+      } else if (whisperResult.status === "ERROR") {
+        return Response.json(
+          {
+            error:
+              "YouTube transcript unavailable and local transcription failed. The audio may be in a language or format that whisper.cpp cannot process.",
+            code: "TRANSCRIPTION_FAILED",
+          },
+          { status: 502 }
+        );
+      } else {
+        // whisper also returned NOT_AVAILABLE
+        return Response.json(
+          {
+            error:
+              "No transcript is available for this sermon and local transcription produced no results.",
+            code: "TRANSCRIPT_NOT_AVAILABLE",
+          },
+          { status: 422 }
+        );
+      }
     }
 
     if (transcriptResult.status === "ERROR") {
@@ -102,15 +121,19 @@ export async function POST(request: Request) {
     }
 
     if (transcriptResult.status === "AVAILABLE") {
-  return Response.json(
-    {
-      message: "Sermon ready for analysis.",
-      metadata,
-      transcript: transcriptResult.data,
-    },
-    { status: 200 }
-  );
-}
+      // Determine which method was used
+      const transcriptionMethod = whisperUsed ? "LOCAL_WHISPER" : "DETERMINISTIC";
+
+      return Response.json(
+        {
+          message: "Sermon ready for analysis.",
+          metadata,
+          transcript: transcriptResult.data,
+          transcriptionMethod,
+        },
+        { status: 200 }
+      );
+    }
 
     return Response.json({
       message: "Sermon analyzed successfully.",
