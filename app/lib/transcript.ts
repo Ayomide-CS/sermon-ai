@@ -1,5 +1,20 @@
-import { fetchTranscript, YoutubeTranscriptDisabledError, YoutubeTranscriptNotAvailableError, YoutubeTranscriptVideoUnavailableError } from "youtube-transcript-plus";
+import {
+  YoutubeTranscript,
+  YoutubeTranscriptDisabledError,
+  YoutubeTranscriptNotAvailableError,
+  YoutubeTranscriptVideoUnavailableError,
+} from "youtube-transcript-plus";
 import type { TranscriptResult } from "./transcript-types";
+
+// Realistic browser User-Agent — prevents YouTube from blocking us as "automated queries"
+const BROWSER_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
+
+// Shared instance with proper User-Agent and retries built-in
+const ytTranscript = new YoutubeTranscript({
+  lang: "en",
+  userAgent: BROWSER_USER_AGENT,
+});
 
 // ---------------------------------------------------------------------------
 // In-memory cache for YouTube transcripts (resets on server restart)
@@ -31,44 +46,7 @@ function setInCache(videoId: string, result: TranscriptResult): void {
 }
 
 // ---------------------------------------------------------------------------
-// Retry helper — exponential backoff for rate-limited requests
-// ---------------------------------------------------------------------------
-async function retryWithBackoff<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 5,
-  baseDelayMs: number = 5000,
-): Promise<T> {
-  let lastError: unknown;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-
-      // Check if this is a rate-limit / too-many-requests error
-      const isRateLimit =
-        error instanceof Error &&
-        /too many requests|rate limit|429|ECONNRESET/i.test(error.message);
-
-      if (!isRateLimit || attempt === maxRetries) {
-        // Not a rate-limit error, or we've exhausted retries — rethrow
-        throw error;
-      }
-
-      const delay = baseDelayMs * Math.pow(2, attempt);
-      console.warn(
-        `[transcript] Rate-limited. Retrying in ${delay / 1000}s (attempt ${attempt + 1}/${maxRetries})`
-      );
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    }
-  }
-
-  throw lastError;
-}
-
-// ---------------------------------------------------------------------------
-// Main transcript fetcher — with cache + retry
+// Main transcript fetcher — with cache + proper User-Agent
 // ---------------------------------------------------------------------------
 export async function getYouTubeTranscript(videoId: string): Promise<TranscriptResult> {
   // Check cache first
@@ -79,23 +57,26 @@ export async function getYouTubeTranscript(videoId: string): Promise<TranscriptR
   }
 
   try {
-    const transcript = await retryWithBackoff(() => fetchTranscript(videoId));
+    const rawResult = await ytTranscript.fetchTranscript(videoId);
+
+    // The library returns TranscriptSegment[] when videoDetails is false (our config)
+    const transcript: any[] = Array.isArray(rawResult) ? rawResult : [];
 
     if (!transcript || transcript.length === 0) {
-      const result: TranscriptResult = { status: "NOT_AVAILABLE", data: null };
-      setInCache(videoId, result);
-      return result;
+      const cacheEntry: TranscriptResult = { status: "NOT_AVAILABLE", data: null };
+      setInCache(videoId, cacheEntry);
+      return cacheEntry;
     }
 
     const text = transcript.map((item) => item.text).join(" ");
 
     if (!text.trim()) {
-      const result: TranscriptResult = { status: "NOT_AVAILABLE", data: null };
-      setInCache(videoId, result);
-      return result;
+      const cacheEntry: TranscriptResult = { status: "NOT_AVAILABLE", data: null };
+      setInCache(videoId, cacheEntry);
+      return cacheEntry;
     }
 
-    const result: TranscriptResult = {
+    const cacheEntry: TranscriptResult = {
       status: "AVAILABLE",
       data: {
         text: text.trim(),
@@ -107,8 +88,8 @@ export async function getYouTubeTranscript(videoId: string): Promise<TranscriptR
       },
     };
 
-    setInCache(videoId, result);
-    return result;
+    setInCache(videoId, cacheEntry);
+    return cacheEntry;
   } catch (error) {
     if (error instanceof YoutubeTranscriptDisabledError) {
       const result: TranscriptResult = { status: "DISABLED", data: null };
