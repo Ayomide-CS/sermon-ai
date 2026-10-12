@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const navItems = [
   { href: "/dashboard", label: "Overview" },
@@ -12,6 +13,40 @@ const navItems = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if user has a valid access token
+    const checkAuth = () => {
+      try {
+        const token = localStorage.getItem("sermon_ai_access_token");
+        setIsAuthenticated(!!token);
+      } catch {
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p style={{ color: "var(--ink-muted)" }}>Loading...</p>
+      </div>
+    );
+  }
+
+  // Redirect if not authenticated
+  if (!isAuthenticated) {
+    router.push("/");
+    return null;
+  }
 
   return (
     <div style={{ display: "flex", minHeight: "calc(100vh - 4rem)", background: "var(--background)" }}>
@@ -51,6 +86,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             );
           })}
         </nav>
+
+        {/* Logout link in sidebar */}
+        <div style={{ marginTop: "auto", paddingTop: "1.5rem", borderTop: "1px solid var(--line)" }}>
+          <button
+            onClick={() => {
+              localStorage.removeItem("sermon_ai_access_token");
+              router.push("/");
+            }}
+            style={{
+              width: "100%",
+              padding: "0.65rem 1rem",
+              borderRadius: "0.65rem",
+              color: "#943e2c",
+              background: "transparent",
+              border: "1px solid #f5c6cb",
+              textDecoration: "none",
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Sign Out
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}

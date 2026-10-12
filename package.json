@@ -11,7 +11,10 @@
   },
   "dependencies": {
     "@prisma/orm-postgres": "8.0.0-rc.13",
+    "@types/bcryptjs": "^3.0.0",
+    "bcryptjs": "^3.0.3",
     "dotenv": "^18.0.5",
+    "jose": "^6.2.12",
     "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -19,6 +22,7 @@
     "youtube-transcript-plus": "^2.0.1"
   },
   "devDependencies": {
+    "@prisma/cli-engine": "^0.7.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

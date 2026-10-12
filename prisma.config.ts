@@ -1,17 +1,19 @@
-import dotenv from "dotenv";
-import { definePrismaConfig } from "prisma/config";
-import { defineConfig as defineOrmConfig } from "@prisma/orm-postgres/config";
+import { definePrismaConfig } from "@prisma/cli-engine";
+import { defineConfig } from "@prisma/orm-postgres/config";
 
-dotenv.config({ path: [".env.local", ".env"] });
+// The prisma.config.ts is used by Prisma CLI for project configuration.
+// In Prisma 8, use these commands instead of legacy Prisma 7:
+//   prisma contract emit    — generate contract.d.ts + contract.json (replaces `prisma generate`)
+//   prisma contract format  — format the PSL source (replaces `prisma format`)
+//   prisma db update        — push schema to database
+//   prisma migration plan   — create a new migration
+//   prisma migration track  — apply planned migrations
 
 export default definePrismaConfig({
-  orm: defineOrmConfig({
+  orm: defineConfig({
     contract: "./src/prisma/contract.prisma",
     db: {
       connection: process.env.DATABASE_URL!,
     },
   }),
-  skills: {
-    agents: ["claude", "cursor", "agents", "devin"],
-  },
 });
